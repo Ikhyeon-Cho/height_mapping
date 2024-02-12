@@ -1,5 +1,5 @@
 /*
- * ElevationMapRosConverter.cpp
+ * HeightMapMsgs.cpp
  *
  *  Created on: Dec 2, 2023
  *      Author: Ikhyeon Cho
@@ -7,11 +7,11 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "terrain_mapping/ElevationMapRosConverter.h"
+#include "height_map_msgs/HeightMapMsgs.h"
 
-void ElevationMapRosConverter::toMapBoundaryMsg(const ElevationMap& map, visualization_msgs::Marker& msg)
+void HeightMapMsgs::toMapBoundary(const grid_map::GridMap& map, visualization_msgs::Marker& msg)
 {
-  msg.ns = "elevation_map";
+  msg.ns = "height_map";
   msg.lifetime = ros::Duration();
   msg.action = visualization_msgs::Marker::ADD;
   msg.type = visualization_msgs::Marker::LINE_STRIP;
@@ -25,31 +25,38 @@ void ElevationMapRosConverter::toMapBoundaryMsg(const ElevationMap& map, visuali
   msg.header.frame_id = map.getFrameId();
   msg.header.stamp = ros::Time::now();
 
-  float length_x_half = map.getLength().x() / 2.0;
-  float length_y_half = map.getLength().y() / 2.0;
+  float length_x_half = (map.getLength().x() - 0.5 * map.getResolution()) / 2.0;
+  float length_y_half = (map.getLength().y() - 0.5 * map.getResolution()) / 2.0;
 
   msg.points.resize(5);
   msg.points[0].x = map.getPosition().x() + length_x_half;
   msg.points[0].y = map.getPosition().y() + length_x_half;
+  msg.points[0].z = map.atPosition("elevation", map.getPosition());
 
   msg.points[1].x = map.getPosition().x() + length_x_half;
   msg.points[1].y = map.getPosition().y() - length_x_half;
+  msg.points[1].z = map.atPosition("elevation", map.getPosition());
 
   msg.points[2].x = map.getPosition().x() - length_x_half;
   msg.points[2].y = map.getPosition().y() - length_x_half;
+  msg.points[2].z = map.atPosition("elevation", map.getPosition());
 
   msg.points[3].x = map.getPosition().x() - length_x_half;
   msg.points[3].y = map.getPosition().y() + length_x_half;
+  msg.points[3].z = map.atPosition("elevation", map.getPosition());
 
   msg.points[4] = msg.points[0];
 }
 
-void ElevationMapRosConverter::toOccupancyGridMsg(const ElevationMap& map, nav_msgs::OccupancyGrid& msg)
+void HeightMapMsgs::toOccupancyGrid(const grid_map::GridMap& map, nav_msgs::OccupancyGrid& msg)
 {
-  const auto& elevation_layer = map.getElevationLayer();
-  auto fill_NAN_with_min = elevation_layer.array().isNaN().select(std::numeric_limits<float>::lowest(), elevation_layer);
-  auto fill_NAN_with_max = elevation_layer.array().isNaN().select(std::numeric_limits<float>::max(), elevation_layer);
+  const auto& elevation_grid = map["elevation"];
 
+  // NAN processing for finding min and max
+  auto fill_NAN_with_min = elevation_grid.array().isNaN().select(std::numeric_limits<float>::lowest(), elevation_grid);
+  auto fill_NAN_with_max = elevation_grid.array().isNaN().select(std::numeric_limits<float>::max(), elevation_grid);
+
+  // Find min and max
   float min = fill_NAN_with_max.minCoeff();
   float max = fill_NAN_with_min.maxCoeff();
 

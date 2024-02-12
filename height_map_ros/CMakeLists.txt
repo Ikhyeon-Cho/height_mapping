@@ -8,28 +8,22 @@ find_package(catkin REQUIRED COMPONENTS
     tf2_ros
     pcl_conversions
     grid_map_core
-    grid_map_ros
     grid_map_msgs
-    nav_msgs
-    visualization_msgs
     height_map_core
+    height_map_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS 
     include
-  LIBRARIES 
-    # height_map
   CATKIN_DEPENDS 
     roscpp
     tf2_ros
     pcl_conversions
     grid_map_core
-    grid_map_ros
     grid_map_msgs
-    nav_msgs
-    visualization_msgs
     height_map_core
+    height_map_msgs
 )
 
 ###########
@@ -47,6 +41,14 @@ add_executable(height_mapping_node src/height_mapping_node.cpp
   src/HeightMapping.cpp
 )
 target_link_libraries(height_mapping_node
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+add_executable(height_map_visualization_node src/height_map_visualization_node.cpp
+  src/HeightMapVisualization.cpp
+)
+target_link_libraries(height_map_visualization_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
 )

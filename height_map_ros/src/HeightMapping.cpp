@@ -53,27 +53,17 @@ void HeightMapping::updateOrigin(const ros::TimerEvent& event)
     return;
 
   map_.move(grid_map::Position(base_to_map.transform.translation.x, base_to_map.transform.translation.y));
+}
 
-  auto start = std::chrono::high_resolution_clock::now();
+void HeightMapping::visualize(const ros::TimerEvent& event)
+{
   // Grid Map Visualization
   grid_map_msgs::GridMap msg_gridmap;
   grid_map::GridMapRosConverter::toMessage(map_, msg_gridmap);
   pub_heightmap_.publish(msg_gridmap);
 
-  auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-  std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
-}
-
-void HeightMapping::visualize(const ros::TimerEvent& event)
-{
+  // Feature Map Visualization
   grid_map_msgs::GridMap msg_featuremap;
   // grid_map::GridMapRosConverter::toMessage(descriptor_map_, msg_featuremap);
   pub_featuremap_.publish(msg_featuremap);
-
-  // Pointcloud Visualization
-  sensor_msgs::PointCloud2 msg_pc;
-  // grid_map::GridMapRosConverter::toPointCloud(descriptor_map_, "elevation", msg_pc);
-  pub_pointcloudmap_.publish(msg_pc);
 }

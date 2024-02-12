@@ -1,7 +1,7 @@
 height_mapping:
 
   # Topics
-  pointCloudTopic: "/laser_fake"
+  pointCloudTopic: "/velodyne_tilted/velodyne_points"
   heightMapTopic: "gridmap"
   featureMapTopic: "descriptor"
 
