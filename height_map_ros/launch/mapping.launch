@@ -1,0 +1,8 @@
+<launch>
+  <!-- Parameters -->
+  <rosparam file="$(find height_map)/config/params.yaml" command="load" subst_value="true" />
+
+  <!-- Terrain Mapping -->
+  <node pkg="height_map" type="height_mapping_node" name="height_mapping" output="screen" />
+
+</launch>

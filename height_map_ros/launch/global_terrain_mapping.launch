@@ -1,0 +1,13 @@
+<launch>
+  <!-- Parameters -->
+  <rosparam file="$(find traversability_mapping)/config/params.yaml" command="load" subst_value="true" />
+
+  <!-- Terrain Mapping -->
+  <node pkg="traversability_mapping" type="global_terrain_mapping_node" name="global_terrain_mapping" output="screen" />
+
+  <!-- Rviz -->
+  <node pkg="rviz" type="rviz" name="rviz_global_terrain_mapping" args="-d $(find traversability_mapping)/rviz/global_terrain_mapping.rviz" />
+
+  <!-- RQT -->
+  <!-- <node pkg="rqt_gui" type="rqt_gui" name="rqt" args="perspective-file $(find wavefront_planner)/rviz/rviz.perspective" /> -->
+</launch>

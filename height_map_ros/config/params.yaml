@@ -1,0 +1,22 @@
+height_mapping:
+
+  # Topics
+  pointCloudTopic: "/laser_fake"
+  heightMapTopic: "gridmap"
+  featureMapTopic: "descriptor"
+
+  # Frame Ids
+  baselinkFrame: "base_link"
+  mapFrame: "map"
+
+  # Point Cloud Filtering
+  minHeightThreshold: -0.7
+  maxHeightThreshold: 0.7
+
+  # Height Map
+  gridResolution: 0.1
+  mapLengthX: 12.0
+  mapLengthY: 12.0
+
+  pose_update_rate: 30
+  map_visualization_rate: 10
