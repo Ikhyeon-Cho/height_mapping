@@ -7,7 +7,7 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_map_ros/HeightMapVisualization.h"
+#include "height_mapping_ros/HeightMapVisualization.h"
 #include <chrono>
 
 void HeightMapVisualization::gridMapCallback(const grid_map_msgs::GridMapConstPtr& msg)

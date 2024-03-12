@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>height_map</name>
+  <name>height_mapping</name>
   <version>0.0.0</version>
-  <description>The height_map package</description>
+  <description>The height_mapping package</description>
   <maintainer email="tre0430@korea.ac.kr">Ikhyeon Cho</maintainer>
   <license>.</license>
 

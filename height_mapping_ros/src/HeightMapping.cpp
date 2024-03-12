@@ -7,7 +7,7 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_map_ros/HeightMapping.h"
+#include "height_mapping_ros/HeightMapping.h"
 #include <chrono>
 
 HeightMapping::HeightMapping()

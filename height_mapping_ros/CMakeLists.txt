@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(height_map)
+project(height_mapping)
 add_compile_options(-std=c++17)
 
 find_package(PCL REQUIRED)
