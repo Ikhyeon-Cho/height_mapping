@@ -10,13 +10,13 @@ height_mapping:
   mapFrame: "map"
 
   # Point Cloud Filtering
-  minHeightThreshold: -0.7
-  maxHeightThreshold: 0.7
+  minHeightThreshold: -0.2
+  maxHeightThreshold: 1.5
 
   # Height Map
   gridResolution: 0.1
-  mapLengthX: 12.0
-  mapLengthY: 12.0
+  mapLengthX: 15.0
+  mapLengthY: 15.0
 
   pose_update_rate: 30
   map_visualization_rate: 10

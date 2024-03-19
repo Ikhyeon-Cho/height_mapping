@@ -21,41 +21,51 @@ namespace grid_map
 class HeightMap : public GridMap
 {
 public:
-  using PointXYZR = pcl::PointXYZI;  // Intensity holds range R from the robot
-
   HeightMap();
 
   HeightMap(double length_x, double length_y, double grid_resolution);
 
-  HeightMap(const std::vector<std::string>& layers);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr getGridDownsampledCloud(const pcl::PointCloud<pcl::PointXYZI>& pointcloud);
 
-  void update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud);
+  void update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, const std::string& method = "KalmanFilter");
 
   const GridMap::Matrix& getElevationLayer() const;
 
   GridMap::Matrix& getElevationLayer();
 
-  const GridMap::Matrix& getVarianceLayer() const;
+  const GridMap::Matrix& getUncertaintyLayer() const;
 
-  GridMap::Matrix& getVarianceLayer();
-
-  const GridMap::Matrix& getNumMeasuredPointsLayer() const;
-
-  GridMap::Matrix& getNumMeasuredPointsLayer();
+  GridMap::Matrix& getUncertaintyLayer();
 
   bool isEmptyAt(const Index& index) const;
 
   bool isEmptyAt(const std::string& layer, const Index& index) const;
 
   void smoothing();
-  // void rayCasting(const Position3 &robotPosition3);
 
-private:  // Helper Functions
-  pcl::PointCloud<PointXYZR>::Ptr getDownsampledCloudAtGrid(const pcl::PointCloud<PointXYZR>& pointcloud);
+private:
+  // Helper Functions
+  void doKF(float& mu, float& sigma2, float point_z, float point_sigma2);  // Kalman Filter
+  void doEWMA(float& mu, float& sigma2, float point_z, float point_sigma2,
+              float alpha = 0.95);  // Exponential Weighted Moving Average Filter
 
-  void updateElevation(const pcl::PointCloud<PointXYZR>& pointcloud);
+  // Basic Layers
+  std::string layer_elevation_{ "elevation" };
+  std::string layer_uncertainty_{ "uncertainty" };
+  std::string layer_intensity_{ "intensity" };
 
-  void updateSampleVariance(const pcl::PointCloud<PointXYZR>& pointcloud);
+  // Consistency Check Layers
+  std::string layer_min_z_{ "min_z" };
+  std::string layer_max_z_{ "max_z" };
+
+  // Statistics Layers
+  std::string layer_statistics_mu_{ "statistics_mu" };
+  std::string layer_statistics_sigma2_{ "statistics_sigma2" };
+  std::string layer_statistics_n_{ "statistics_n" };
+
+  // Grid-based pointcloud downsampling
+  std::string layer_downsampled_cloud_{ "downsampled_cloud" };
+  std::string layer_downsampled_cloud_intensity_{ "downsampled_cloud_intensity" };
 };
 }  // namespace grid_map
 

@@ -23,7 +23,7 @@ void HeightMapVisualization::gridMapCallback(const grid_map_msgs::GridMapConstPt
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-  std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
+  std::cout << "Time taken for visualization: " << duration.count() << " milliseconds" << std::endl;
 }
 
 void HeightMapVisualization::featureMapCallback(const grid_map_msgs::GridMapConstPtr& msg)

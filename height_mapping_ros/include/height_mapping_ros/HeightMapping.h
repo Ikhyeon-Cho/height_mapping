@@ -34,7 +34,7 @@ public:
 
   void updateHeight(const sensor_msgs::PointCloud2ConstPtr& msg);
 
-  void updateOrigin(const ros::TimerEvent& event);
+  void updatePosition(const ros::TimerEvent& event);
 
   void visualize(const ros::TimerEvent& event);
 
@@ -53,8 +53,10 @@ private:
   std::string map_frame_{ nh_.param<std::string>("mapFrame", "map") };
 
   // Pointcloud Filter
-  double cloud_min_height_{ nh_.param<double>("minHeightThreshold", -0.5) };
-  double cloud_max_height_{ nh_.param<double>("maxHeightThreshold", 1.5) };
+  double height_min_thrsh_{ nh_.param<double>("minHeightThreshold", -0.5) };
+  double height_max_thrsh_{ nh_.param<double>("maxHeightThreshold", 1.5) };
+  double range_min_thrsh_{ nh_.param<double>("minRangeThreshold", 0.3) };
+  double range_max_thrsh_{ nh_.param<double>("maxRangeThreshold", 10.0) };
 
   // Height Map Parameters
   double grid_resolution_{ nh_.param<double>("gridResolution", 0.1) };
@@ -67,13 +69,13 @@ private:
 
   // ROS
   ros::Subscriber sub_lidar_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &HeightMapping::updateHeight, this) };
-  ros::Publisher pub_filtered_pointcloud_{ nh_.advertise<sensor_msgs::PointCloud2>("pointcloud", 1) };
+  ros::Publisher pub_registered_pointcloud_{ nh_.advertise<sensor_msgs::PointCloud2>("cloud_registered", 1) };
 
   ros::Publisher pub_heightmap_{ nh_.advertise<grid_map_msgs::GridMap>(heightmap_topic_, 1) };
   ros::Publisher pub_featuremap_{ nh_.advertise<grid_map_msgs::GridMap>(featuremap_topic_, 1) };
   ros::Publisher pub_pointcloudmap_{ nh_.advertise<sensor_msgs::PointCloud2>(pointcloudmap_topic_, 1) };
 
-  ros::Timer pose_update_timer_{ nh_.createTimer(pose_update_rate_, &HeightMapping::updateOrigin, this) };
+  ros::Timer pose_update_timer_{ nh_.createTimer(pose_update_rate_, &HeightMapping::updatePosition, this) };
   ros::Timer map_visualization_timer_{ nh_.createTimer(map_visualization_rate_, &HeightMapping::visualize, this) };
 
 private:
