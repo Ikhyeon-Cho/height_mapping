@@ -18,9 +18,9 @@
 class HeightMapMsgs
 {
 public:
-  static void toMapBoundary(const grid_map::GridMap& map, visualization_msgs::Marker& msg);
+  static void toMapRegion(const grid_map::HeightMap& map, visualization_msgs::Marker& msg);
 
-  static void toOccupancyGrid(const grid_map::GridMap& map, nav_msgs::OccupancyGrid& msg);
+  static void toOccupancyGrid(const grid_map::HeightMap& map, nav_msgs::OccupancyGrid& msg);
 };
 
 #endif  // HEIGHT_MAP_MSGS_H

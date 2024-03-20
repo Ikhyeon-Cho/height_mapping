@@ -2,21 +2,36 @@ height_mapping:
 
   # Topics
   pointCloudTopic: "/velodyne_tilted/velodyne_points"
-  heightMapTopic: "gridmap"
-  featureMapTopic: "descriptor"
+  heightMapTopic: "elevation_grid"
+  heightMapCloudTopic: "elevation_cloud"
+  featureMapTopic: "elevation_feature"
 
   # Frame Ids
   baselinkFrame: "base_link"
   mapFrame: "map"
 
-  # Point Cloud Filtering
+  # Pointcloud Filter
   minHeightThreshold: -0.2
   maxHeightThreshold: 1.5
+  minRangeThreshold: 0.3
+  maxRangeThreshold: 10.0
 
   # Height Map
   gridResolution: 0.1
   mapLengthX: 15.0
   mapLengthY: 15.0
 
-  pose_update_rate: 30
-  map_visualization_rate: 10
+  # Node Settings
+  poseUpdateRate: 10
+  mapVisualizationRate: 10
+  
+global_mapping:
+  # Topics
+  globalMapTopic: "/height_mapping/elevation_cloud_global"
+  mapRegionTopic: "/height_mapping/map_region_global"
+
+  gridResolution: 0.1
+  mapLengthXGlobal: 400
+  mapLengthYGlobal: 400
+
+  globalMapVisualizationRate: 1.0

@@ -1,7 +1,7 @@
 /*
  * height_map_visualization_node.cpp
  *
- *  Created on: Dec 12, 2024
+ *  Created on: Feb 12, 2024
  *      Author: Ikhyeon Cho
  *	 Institute: Korea Univ. ISR (Intelligent Systems & Robotics) Lab
  *       Email: tre0430@korea.ac.kr
@@ -13,7 +13,6 @@
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "height_map_visualization");
-  ros::NodeHandle nh("~");
 
   HeightMapVisualization height_map_visualization_node;
 

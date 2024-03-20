@@ -9,7 +9,7 @@
 
 #include "height_map_msgs/HeightMapMsgs.h"
 
-void HeightMapMsgs::toMapBoundary(const grid_map::GridMap& map, visualization_msgs::Marker& msg)
+void HeightMapMsgs::toMapRegion(const grid_map::HeightMap& map, visualization_msgs::Marker& msg)
 {
   msg.ns = "height_map";
   msg.lifetime = ros::Duration();
@@ -31,26 +31,26 @@ void HeightMapMsgs::toMapBoundary(const grid_map::GridMap& map, visualization_ms
   msg.points.resize(5);
   msg.points[0].x = map.getPosition().x() + length_x_half;
   msg.points[0].y = map.getPosition().y() + length_x_half;
-  msg.points[0].z = map.atPosition("elevation", map.getPosition());
+  msg.points[0].z = 0;
 
   msg.points[1].x = map.getPosition().x() + length_x_half;
   msg.points[1].y = map.getPosition().y() - length_x_half;
-  msg.points[1].z = map.atPosition("elevation", map.getPosition());
+  msg.points[1].z = 0;
 
   msg.points[2].x = map.getPosition().x() - length_x_half;
   msg.points[2].y = map.getPosition().y() - length_x_half;
-  msg.points[2].z = map.atPosition("elevation", map.getPosition());
+  msg.points[2].z = 0;
 
   msg.points[3].x = map.getPosition().x() - length_x_half;
   msg.points[3].y = map.getPosition().y() + length_x_half;
-  msg.points[3].z = map.atPosition("elevation", map.getPosition());
+  msg.points[3].z = 0;
 
   msg.points[4] = msg.points[0];
 }
 
-void HeightMapMsgs::toOccupancyGrid(const grid_map::GridMap& map, nav_msgs::OccupancyGrid& msg)
+void HeightMapMsgs::toOccupancyGrid(const grid_map::HeightMap& map, nav_msgs::OccupancyGrid& msg)
 {
-  const auto& elevation_grid = map["elevation"];
+  const auto& elevation_grid = map[map.getHeightLayer()];
 
   // NAN processing for finding min and max
   auto fill_NAN_with_min = elevation_grid.array().isNaN().select(std::numeric_limits<float>::lowest(), elevation_grid);
@@ -60,5 +60,5 @@ void HeightMapMsgs::toOccupancyGrid(const grid_map::GridMap& map, nav_msgs::Occu
   float min = fill_NAN_with_max.minCoeff();
   float max = fill_NAN_with_min.maxCoeff();
 
-  grid_map::GridMapRosConverter::toOccupancyGrid(map, "elevation", min, max, msg);
+  grid_map::GridMapRosConverter::toOccupancyGrid(map, map.getHeightLayer(), min, max, msg);
 }

@@ -1,10 +1,10 @@
 <launch>
-  <arg name="input_cloud" default="/velodyne_points" /> 
+  <arg name="input_cloud" default="/velodyne_tilted/velodyne_points" /> 
 
-  <include file="$(find height_mapping)/launch/mapping.launch">
+  <include file="$(find height_mapping)/launch/height_mapping.launch">
     <arg name="input_cloud" value="$(arg input_cloud)" />
   </include>
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find height_mapping)/rviz/height_mapping.rviz" />
+  <node pkg="rviz" type="rviz" name="height_mapping_rviz" args="-d $(find height_mapping)/rviz/height_mapping.rviz" />
 
 </launch>

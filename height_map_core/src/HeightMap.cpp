@@ -112,8 +112,8 @@ void HeightMap::update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, const 
   }
 
   // Access to data matrix -> this is faster than calling at() function for each point
-  auto& data_elevation = getElevationLayer();
-  auto& data_uncertainty = getUncertaintyLayer();
+  auto& data_elevation = getHeightMatrix();
+  auto& data_uncertainty = getUncertaintyMatrix();
   auto& data_intensity = get(layer_intensity_);
 
   auto& data_min_z = get(layer_min_z_);
@@ -270,22 +270,32 @@ void HeightMap::smoothing()
   }
 }
 
-const grid_map::GridMap::Matrix& HeightMap::getElevationLayer() const
+const std::string& HeightMap::getHeightLayer() const
+{
+  return layer_elevation_;
+}
+
+const std::string& HeightMap::getUncertaintyLayer() const
+{
+  return layer_uncertainty_;
+}
+
+const grid_map::GridMap::Matrix& HeightMap::getHeightMatrix() const
 {
   return get(layer_elevation_);
 }
 
-grid_map::GridMap::Matrix& HeightMap::getElevationLayer()
+grid_map::GridMap::Matrix& HeightMap::getHeightMatrix()
 {
   return get(layer_elevation_);
 }
 
-const grid_map::GridMap::Matrix& HeightMap::getUncertaintyLayer() const
+const grid_map::GridMap::Matrix& HeightMap::getUncertaintyMatrix() const
 {
   return get(layer_uncertainty_);
 }
 
-grid_map::GridMap::Matrix& HeightMap::getUncertaintyLayer()
+grid_map::GridMap::Matrix& HeightMap::getUncertaintyMatrix()
 {
   return get(layer_uncertainty_);
 }

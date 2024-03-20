@@ -27,15 +27,18 @@ public:
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr getGridDownsampledCloud(const pcl::PointCloud<pcl::PointXYZI>& pointcloud);
 
+  /// @brief
+  /// @param pointcloud The pointcloud that will be used to update the height map, aligned with the map frame
+  /// @param method 1. KalmanFilter 2. EwmaFilter 3. KalmanFilter+ConsistencyCheck
   void update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, const std::string& method = "KalmanFilter");
 
-  const GridMap::Matrix& getElevationLayer() const;
+  const std::string& getHeightLayer() const;
+  const GridMap::Matrix& getHeightMatrix() const;
+  GridMap::Matrix& getHeightMatrix();
 
-  GridMap::Matrix& getElevationLayer();
-
-  const GridMap::Matrix& getUncertaintyLayer() const;
-
-  GridMap::Matrix& getUncertaintyLayer();
+  const std::string& getUncertaintyLayer() const;
+  const GridMap::Matrix& getUncertaintyMatrix() const;
+  GridMap::Matrix& getUncertaintyMatrix();
 
   bool isEmptyAt(const Index& index) const;
 

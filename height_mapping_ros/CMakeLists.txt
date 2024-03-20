@@ -53,6 +53,14 @@ target_link_libraries(height_map_visualization_node
   ${catkin_LIBRARIES}
 )
 
+add_executable(global_mapping_node src/global_mapping_node.cpp
+  src/GlobalMapping.cpp
+)
+target_link_libraries(global_mapping_node
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
 # add_executable(global_terrain_mapping_node src/global_terrain_mapping_node.cpp
 #   src/terrain_mapping/GlobalTerrainMapping.cpp
 #   src/terrain_mapping/ElevationMap.cpp

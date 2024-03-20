@@ -41,7 +41,9 @@ void HeightMapping::updateHeight(const sensor_msgs::PointCloud2ConstPtr& msg)
 
   auto cloud_map = ros_utils::pcl::transformPointcloud<pType>(cloud_filtered, base_to_map);
 
+  // Downsample pointcloud -> each grid should have only one point (max height)
   auto cloud_registered = map_.getGridDownsampledCloud(*cloud_map);
+
   map_.update(*cloud_registered, "KalmanFilter+ConsistencyCheck");
 
   // For Debug: Publish preprocessed pointcloud
@@ -61,11 +63,10 @@ void HeightMapping::updatePosition(const ros::TimerEvent& event)
 
 void HeightMapping::visualize(const ros::TimerEvent& event)
 {
-  // Grid Map Visualization
-  grid_map_msgs::GridMap msg_gridmap;
-  // grid_map::GridMapRosConverter::toMessage(map_, map_.getBasicLayers(), msg_gridmap);
-  grid_map::GridMapRosConverter::toMessage(map_, msg_gridmap);
-  pub_heightmap_.publish(msg_gridmap);
+  // Height Map Visualization
+  grid_map_msgs::GridMap msg_heightmap;
+  grid_map::GridMapRosConverter::toMessage(map_, map_.getBasicLayers(), msg_heightmap);
+  pub_heightmap_.publish(msg_heightmap);
 
   // Feature Map Visualization
   // grid_map_msgs::GridMap msg_featuremap;

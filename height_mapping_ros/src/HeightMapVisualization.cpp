@@ -12,18 +12,11 @@
 
 void HeightMapVisualization::gridMapCallback(const grid_map_msgs::GridMapConstPtr& msg)
 {
-  auto start = std::chrono::high_resolution_clock::now();
-
   grid_map::GridMapRosConverter::fromMessage(*msg, map_);
 
-  visualizePointCloud(map_, pub_elevationcloud_);
+  visualizePointCloud(map_, pub_elevationcloud_);  // visualize elevation map
 
-  visualizeMapBoundary(map_, pub_boundary_);
-
-  auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-  std::cout << "Time taken for visualization: " << duration.count() << " milliseconds" << std::endl;
+  visualizeMapRegion();
 }
 
 void HeightMapVisualization::featureMapCallback(const grid_map_msgs::GridMapConstPtr& msg)
@@ -44,9 +37,9 @@ void HeightMapVisualization::visualizePointCloud(const grid_map::GridMap& map, r
   }
 }
 
-void HeightMapVisualization::visualizeMapBoundary(const grid_map::GridMap& map, ros::Publisher& pub_boundary)
+void HeightMapVisualization::visualizeMapRegion()
 {
-  visualization_msgs::Marker msg_boundary;
-  HeightMapMsgs::toMapBoundary(map, msg_boundary);
-  pub_boundary.publish(msg_boundary);
+  visualization_msgs::Marker msg_map_region;
+  HeightMapMsgs::toMapRegion(map_, msg_map_region);
+  pub_map_region_.publish(msg_map_region);
 }

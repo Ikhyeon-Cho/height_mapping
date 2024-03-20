@@ -27,25 +27,27 @@ public:
 
   void visualizePointCloud(const grid_map::GridMap& map, ros::Publisher& pub_cloud);
 
-  void visualizeMapBoundary(const grid_map::GridMap& map, ros::Publisher& pub_boundary);
+  void visualizeMapRegion();
 
 private:
   ros::NodeHandle nh_{ "height_mapping" };
+  ros::NodeHandle pnh_{ "~" };
 
+  // Topics
   std::string heightmap_topic_{ nh_.param<std::string>("heightMapTopic", "gridmap") };
+  // std::string featuremap_topic_{ nh_.param<std::string>("featureMapTopic", "featuremap") };
+
+  // ROS
   ros::Subscriber sub_heightmap_{ nh_.subscribe(heightmap_topic_, 10, &HeightMapVisualization::gridMapCallback, this) };
+  // ros::Subscriber sub_featuremap_{ nh_.subscribe(featuremap_topic_, 10, &HeightMapVisualization::featureMapCallback,
+  //  this) };
 
-  std::string featuremap_topic_{ nh_.param<std::string>("featureMapTopic", "featuremap") };
-  ros::Subscriber sub_featuremap_{ nh_.subscribe(featuremap_topic_, 10, &HeightMapVisualization::featureMapCallback,
-                                                 this) };
-
-  // Publishers
-  ros::Publisher pub_elevationcloud_{ nh_.advertise<sensor_msgs::PointCloud2>("elevation_cloud", 1) };
-  ros::Publisher pub_featurecloud_{ nh_.advertise<sensor_msgs::PointCloud2>("feature_cloud", 1) };
-  ros::Publisher pub_boundary_{ nh_.advertise<visualization_msgs::Marker>("map_boundary", 1) };
+  ros::Publisher pub_elevationcloud_{ pnh_.advertise<sensor_msgs::PointCloud2>("/height_mapping/elevation_cloud", 1) };
+  ros::Publisher pub_featurecloud_{ pnh_.advertise<sensor_msgs::PointCloud2>("/height_mapping/feature_cloud", 1) };
+  ros::Publisher pub_map_region_{ pnh_.advertise<visualization_msgs::Marker>("/height_mapping/map_region", 1) };
 
 private:
-  grid_map::GridMap map_;
+  grid_map::HeightMap map_;
   grid_map::GridMap feature_map_;
 };
 
