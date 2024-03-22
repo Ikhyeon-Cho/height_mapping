@@ -21,24 +21,16 @@ namespace grid_map
 class HeightMap : public GridMap
 {
 public:
-  HeightMap();
-
   HeightMap(double length_x, double length_y, double grid_resolution);
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr getGridDownsampledCloud(const pcl::PointCloud<pcl::PointXYZI>& pointcloud);
 
   /// @brief
   /// @param pointcloud The pointcloud that will be used to update the height map, aligned with the map frame
   /// @param method 1. KalmanFilter 2. EwmaFilter 3. KalmanFilter+ConsistencyCheck
-  void update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, const std::string& method = "KalmanFilter");
+  void update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud);
 
   const std::string& getHeightLayer() const;
   const GridMap::Matrix& getHeightMatrix() const;
   GridMap::Matrix& getHeightMatrix();
-
-  const std::string& getUncertaintyLayer() const;
-  const GridMap::Matrix& getUncertaintyMatrix() const;
-  GridMap::Matrix& getUncertaintyMatrix();
 
   bool isEmptyAt(const Index& index) const;
 
@@ -46,30 +38,31 @@ public:
 
   void smoothing();
 
+  float getMaxHeight() const;
+  float getMinHeight() const;
+  std::tuple<float, float> getMinMaxHeight() const;
+
 private:
   // Helper Functions
   void doKF(float& mu, float& sigma2, float point_z, float point_sigma2);  // Kalman Filter
-  void doEWMA(float& mu, float& sigma2, float point_z, float point_sigma2,
-              float alpha = 0.95);  // Exponential Weighted Moving Average Filter
+  void doEWMA(float& mu, float point_z, float alpha = 0.8);                // Exponential Weighted Moving Average Filter
 
   // Basic Layers
-  std::string layer_elevation_{ "elevation" };
-  std::string layer_uncertainty_{ "uncertainty" };
-  std::string layer_intensity_{ "intensity" };
+  std::string layer_height_{ "elevation" };
+  std::string layer_variance_{ "variance" };
 
   // Consistency Check Layers
-  std::string layer_min_z_{ "min_z" };
-  std::string layer_max_z_{ "max_z" };
+  std::string layer_min_height_{ "elevation_min" };
+  std::string layer_max_height_{ "elevation_max" };
+  std::string layer_height_diff_{ "elevation_diff" };
 
   // Statistics Layers
-  std::string layer_statistics_mu_{ "statistics_mu" };
-  std::string layer_statistics_sigma2_{ "statistics_sigma2" };
-  std::string layer_statistics_n_{ "statistics_n" };
+  std::string layer_measured_num_{ "measured_num" };
 
-  // Grid-based pointcloud downsampling
-  std::string layer_downsampled_cloud_{ "downsampled_cloud" };
-  std::string layer_downsampled_cloud_intensity_{ "downsampled_cloud_intensity" };
+  // Intensity Layer: LiDAR intensity
+  std::string layer_intensity_{ "intensity" };
 };
+
 }  // namespace grid_map
 
 #endif  // HEIGHT_MAP_H

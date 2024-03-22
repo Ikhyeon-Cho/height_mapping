@@ -1,0 +1,17 @@
+<launch>
+  <arg name="image_file" default="elevation.png" />
+  <arg name="grid_resolution" default="0.1" />
+
+  <!-- Assign Parameters to Server -->
+  <rosparam file="$(find height_map_loader)/launch/config/params.yaml" command="load"
+    subst_value="true" />
+
+  <!-- Height Map Loader -->
+  <node pkg="height_map_loader" type="height_map_loader_node" name="height_map_loader"
+    output="screen">
+    <param name="imageDir" value="$(find height_map_loader)/map/" />
+    <param name="imageFile" value="$(arg image_file)" />
+    <param name="gridResolution" value="$(arg grid_resolution)" />
+  </node>
+
+</launch>

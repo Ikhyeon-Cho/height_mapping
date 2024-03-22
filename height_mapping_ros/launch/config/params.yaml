@@ -30,8 +30,14 @@ global_mapping:
   globalMapTopic: "/height_mapping/elevation_cloud_global"
   mapRegionTopic: "/height_mapping/map_region_global"
 
+  # Map parameters
   gridResolution: 0.1
   mapLengthXGlobal: 400
   mapLengthYGlobal: 400
 
+  # Node settings
   globalMapVisualizationRate: 1.0
+
+  # Map saver parameters
+  mapSaveDir: "$(find height_mapping)/map"
+

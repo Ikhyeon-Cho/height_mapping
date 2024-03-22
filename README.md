@@ -31,7 +31,7 @@ Use the following commands to download and compile the package.
     catkin build
 
 ## Run the package
-In order to get the height map with your robot, you need to adapt a few parameters, which are specified in the params.yaml file in `height_mapping_ros/launch/config` folder.
+In order to get the height map with your robot, you need to adapt a few parameters, which are specified in the params.yaml file in `height_mapping/launch/config` folder.
 
 To start the height mapping, use command
 

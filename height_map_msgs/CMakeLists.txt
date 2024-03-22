@@ -1,13 +1,25 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(height_map_msgs)
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 find_package(PCL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
     height_map_core
-    grid_map_ros
     visualization_msgs
     nav_msgs
+    message_generation
+    grid_map_msgs
+    grid_map_cv
+    grid_map_ros
+)
+
+add_service_files(
+  FILES
+  SaveGridMapLayer.srv
+)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 )
 
 catkin_package(
@@ -17,10 +29,11 @@ catkin_package(
     ${PROJECT_NAME}
   CATKIN_DEPENDS 
     height_map_core
-    grid_map_ros
     visualization_msgs
     nav_msgs
-
+    grid_map_msgs
+    grid_map_cv
+    grid_map_ros
 )
 
 ###########
@@ -36,8 +49,8 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   src/HeightMapMsgs.cpp
+  src/HeightMapConverter.cpp
 )
-
 target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}

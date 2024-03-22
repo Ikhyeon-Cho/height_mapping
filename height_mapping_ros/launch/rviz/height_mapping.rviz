@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /ElevationCloud (Global)1
       Splitter Ratio: 0.5700245499610901
     Tree Height: 1019
   - Class: rviz/Selection
@@ -53,7 +54,7 @@ Visualization Manager:
       Class: rviz/PointCloud2
       Color: 255; 255; 255
       Color Transformer: Intensity
-      Decay Time: 300
+      Decay Time: 1000
       Enabled: true
       Invert Rainbow: false
       Max Color: 0; 0; 0
@@ -93,7 +94,7 @@ Visualization Manager:
       Unreliable: false
       Use Rainbow: true
       Value: true
-    - Alpha: 0.5
+    - Alpha: 0.699999988079071
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -114,7 +115,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.07000000029802322
+      Size (m): 0.10000000149011612
       Style: Boxes
       Topic: /height_mapping/elevation_cloud
       Unreliable: false
@@ -133,11 +134,11 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 164; 0; 0
-      Max Intensity: 100
-      Min Color: 252; 233; 79
+      Enabled: false
+      Invert Rainbow: true
+      Max Color: 237; 212; 0
+      Max Intensity: 30
+      Min Color: 32; 74; 135
       Min Intensity: 0
       Name: ElevationCloud (Global)
       Position Transformer: XYZ
@@ -149,8 +150,8 @@ Visualization Manager:
       Topic: /height_mapping/elevation_cloud_global
       Unreliable: false
       Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
+      Use rainbow: false
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /height_mapping/map_region
@@ -195,7 +196,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 226.6795654296875
+      Distance: 42.59892654418945
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -203,17 +204,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 7.474215507507324
-        Y: 9.205804824829102
-        Z: -13.68636703491211
+        X: -3.50268292427063
+        Y: -2.2149648666381836
+        Z: -3.71156644821167
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7453997731208801
+      Pitch: 0.570399820804596
       Target Frame: base_link
-      Yaw: 0.713071346282959
+      Yaw: 0.8712429404258728
     Saved: ~
 Window Geometry:
   Displays:

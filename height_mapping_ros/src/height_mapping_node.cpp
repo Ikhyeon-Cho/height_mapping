@@ -8,7 +8,7 @@
  */
 
 #include <ros/ros.h>
-#include "height_mapping_ros/HeightMapping.h"
+#include "height_mapping/HeightMapping.h"
 
 int main(int argc, char** argv)
 {
