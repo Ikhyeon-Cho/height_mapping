@@ -14,203 +14,243 @@ namespace grid_map
 HeightMap::HeightMap(double length_x, double length_y, double grid_resolution)
 {
   // Add basic layers
-  add(layer_elevation_);
-  add(layer_uncertainty_);
-  add(layer_intensity_);
-
-  // Add consistency checking layers
-  add(layer_min_z_);
-  add(layer_max_z_);
-
-  // Add statistics layers
-  add(layer_statistics_mu_);
-  add(layer_statistics_sigma2_);
-  add(layer_statistics_n_);
+  add(layer_height_);
+  add(layer_variance_);
 
   setFrameId("map");
   setGeometry(grid_map::Length(length_x, length_y), grid_resolution);
-  setBasicLayers({ layer_elevation_, layer_uncertainty_, layer_intensity_ });
-
-  // For grid-based downsampling of pointcloud
-  add(layer_downsampled_cloud_);
-  add(layer_downsampled_cloud_intensity_);
+  setBasicLayers({ layer_height_ });
 }
 
-HeightMap::HeightMap() : HeightMap(15, 15, 0.15)
+void HeightMap::update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud)
 {
-}
+  // Add intensity layer if not exists
+  if (!exists(layer_intensity_))
+    add(layer_intensity_);
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr
-HeightMap::getGridDownsampledCloud(const pcl::PointCloud<pcl::PointXYZI>& pointcloud)
-{
-  // Note: Add() function and erase() function is too slow. Be careful!
-  clear(layer_downsampled_cloud_);
-  clear(layer_downsampled_cloud_intensity_);
-
-  auto& data_downsampled_cloud = get(layer_downsampled_cloud_);
-  auto& data_downsampled_cloud_intensity = get(layer_downsampled_cloud_intensity_);
-
-  // Create a set to keep track of unique grid indices.
-  std::vector<grid_map::Index> measured_index_list;
-  grid_map::Index index;
-  for (const auto& point : pointcloud)
-  {
-    // Check whether point is inside the map
-    if (!getIndex(grid_map::Position(point.x, point.y), index))
-      continue;
-
-    // First grid height measuerment
-    if (isEmptyAt(layer_downsampled_cloud_, index))
-    {
-      data_downsampled_cloud(index(0), index(1)) = point.z;
-      data_downsampled_cloud_intensity(index(0), index(1)) = point.intensity;
-      measured_index_list.push_back(index);
-    }
-    else if (point.z > data_downsampled_cloud(index(0), index(1)))
-    {
-      data_downsampled_cloud(index(0), index(1)) = point.z;
-      data_downsampled_cloud_intensity(index(0), index(1)) = point.intensity;
-    }
-  }  // pointcloud loop ends
-
-  // Get overrided point height (per grid) >> saved in downsampled_cloud
-  auto downsampled_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZI>>();
-  downsampled_cloud->header = pointcloud.header;
-  downsampled_cloud->reserve(measured_index_list.size());
-
-  // declare outside of for loop : for faster speed
-  // Eigen constructors are pretty slow
-  grid_map::Position3 grid_position3D;
-  pcl::PointXYZI point;
-  for (const auto& index : measured_index_list)
-  {
-    getPosition3(layer_downsampled_cloud_, index, grid_position3D);
-
-    point.x = grid_position3D.x();
-    point.y = grid_position3D.y();
-    point.z = grid_position3D.z();
-    point.intensity = data_downsampled_cloud_intensity(index(0), index(1));
-
-    downsampled_cloud->push_back(point);
-  }
-
-  return downsampled_cloud;
-}
-
-void HeightMap::update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, const std::string& method)
-{
   if (pointcloud.empty())
   {
-    std::cout << " [HeightMap] Warning: Skipping map update - point cloud is empty! \n";
+    std::cout << " [ HeightMap] Warning: Skipping map update - point cloud is empty! \n";
     return;
   }
 
   if (pointcloud.header.frame_id != getFrameId())
   {
-    std::cout << " [HeightMap] Warning: Frame ID mismatch - pointcloud is in a different frame! \n";
+    std::cout << " [ HeightMap] Warning: Frame ID mismatch - pointcloud is in a different frame! \n";
     return;
   }
 
   // Access to data matrix -> this is faster than calling at() function for each point
   auto& data_elevation = getHeightMatrix();
-  auto& data_uncertainty = getUncertaintyMatrix();
+  auto& data_variance = get(layer_variance_);
   auto& data_intensity = get(layer_intensity_);
 
-  auto& data_min_z = get(layer_min_z_);
-  auto& data_max_z = get(layer_max_z_);
+  //////////////////////////////////////////////////
+  ////////////// 1. Kalman Filter //////////////////
+  //////////////////////////////////////////////////
+  // We assume that the point with large distance //
+  //    is less reliable for height estimation    //
+  //////////////////////////////////////////////////
+  //////////////////////////////////////////////////
 
-  auto& data_mu = get(layer_statistics_mu_);
-  auto& data_sigma2 = get(layer_statistics_sigma2_);
-  auto& data_n = get(layer_statistics_n_);
+  // // Only check the measured grid indices for efficiency
+  // grid_map::Index index;
+  // for (const auto& point : pointcloud)
+  // {
+  //   // Skip if point is outside of the map
+  //   if (!getIndex(grid_map::Position(point.x, point.y), index))
+  //     continue;
+
+  //   auto point_variance = std::sqrt(point.x * point.x + point.y * point.y);
+
+  //   auto& elevation = data_elevation(index(0), index(1));
+  //   auto& variance = data_variance(index(0), index(1));
+  //   auto& intensity = data_intensity(index(0), index(1));
+
+  //   // Initialize height attributes
+  //   if (isEmptyAt(index))
+  //   {
+  //     elevation = point.z;              // at(layer_elevation, index) = point.z
+  //     variance = point_variance;  // at(layer_variance, index) = point_variance
+  //     intensity = point.intensity;      // at(layer_intensity, index) = point.intensity
+
+  //     continue;
+  //   }
+
+  //   doKF(elevation, variance, point.z, point_variance);
+  //   doKF(intensity, variance, point.intensity, point_variance);
+
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+  ///// 2. Kalman Filter + Consistency Check /////
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+
+  // if (!exists(layer_height_diff_))
+  // {
+  //   add(layer_height_diff_);
+  //   add(layer_min_height_);
+  //   add(layer_max_height_);
+  // }
+
+  // auto& data_min_z = get(layer_min_height_);
+  // auto& data_max_z = get(layer_max_height_);
+  // auto& data_diff_z = get(layer_height_diff_);
+
+  // // Only check the measured grid indices for efficiency
+  // grid_map::Index index;
+  // for (const auto& point : pointcloud)
+  // {
+  //   // Skip if point is outside of the map
+  //   if (!getIndex(grid_map::Position(point.x, point.y), index))
+  //     continue;
+
+  //   auto point_variance = std::sqrt(point.x * point.x + point.y * point.y);
+
+  //   auto& elevation = data_elevation(index(0), index(1));
+  //   auto& variance = data_variance(index(0), index(1));
+  //   auto& intensity = data_intensity(index(0), index(1));
+  //   auto& min_z = data_min_z(index(0), index(1));
+  //   auto& max_z = data_max_z(index(0), index(1));
+  //   auto& diff_z = data_diff_z(index(0), index(1));
+
+  //   // Initialize height attributes
+  //   if (isEmptyAt(index))
+  //   {
+  //     elevation = point.z;          // at(layer_elevation, index) = point.z
+  //     variance = point_variance;    // at(layer_variance, index) = point_variance
+  //     intensity = point.intensity;  // at(layer_intensity, index) = point.intensity
+  //     min_z = point.z;
+  //     max_z = point.z;
+  //     diff_z = 0;
+
+  //     continue;
+  //   }
+
+  //   min_z = std::min(min_z, point.z);
+  //   max_z = std::max(max_z, point.z);
+  //   diff_z = max_z - min_z;
+
+  //   if (diff_z > 0.2)
+  //   {
+  //     variance = 1e+9;
+  //     max_z = min_z = point.z;
+  //     diff_z = 0;
+  //   }
+
+  //   doKF(elevation, variance, point.z, point_variance);
+  //   doKF(intensity, variance, point.intensity, point_variance);
+
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+  /////////////// 3. EWMA Filter /////////////////
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+
+  // // Only check the measured grid indices for efficiency
+  // grid_map::Index index;
+  // for (const auto& point : pointcloud)
+  // {
+  //   // Skip if point is outside of the map
+  //   if (!getIndex(grid_map::Position(point.x, point.y), index))
+  //     continue;
+
+  //   auto point_variance = std::sqrt(point.x * point.x + point.y * point.y);
+
+  //   auto& elevation = data_elevation(index(0), index(1));
+  //   auto& variance = data_variance(index(0), index(1));
+  //   auto& intensity = data_intensity(index(0), index(1));
+
+  //   // Initialize height attributes
+  //   if (isEmptyAt(index))
+  //   {
+  //     elevation = point.z;          // at(layer_elevation, index) = point.z
+  //     variance = point_variance;    // at(layer_variance, index) = point_variance
+  //     intensity = point.intensity;  // at(layer_intensity, index) = point.intensity
+
+  //     continue;
+  //   }
+
+  //   doEWMA(elevation, point.z, 0.8);
+  //   doEWMA(variance, point_variance, 0.8);
+  //   doEWMA(intensity, point.intensity, 0.8);
+
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+  /////////////// 4. Mean Filter /////////////////
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+
+  if (!exists(layer_measured_num_))
+    add(layer_measured_num_);
+
+  auto& data_n = get(layer_measured_num_);
+
+  if (!exists(layer_height_diff_))
+  {
+    add(layer_height_diff_);
+    add(layer_min_height_);
+    add(layer_max_height_);
+  }
+
+  auto& data_min_z = get(layer_min_height_);
+  auto& data_max_z = get(layer_max_height_);
+  auto& data_diff_z = get(layer_height_diff_);
 
   // Only check the measured grid indices for efficiency
   grid_map::Index index;
   for (const auto& point : pointcloud)
   {
-    // We assume that the point with large distance is less reliable for height estimation
-    auto point_uncertainty = std::sqrt(point.x * point.x + point.y * point.y);
-
     // Skip if point is outside of the map
     if (!getIndex(grid_map::Position(point.x, point.y), index))
       continue;
 
-    // 1. Update basic layers
     auto& elevation = data_elevation(index(0), index(1));
-    auto& uncertainty = data_uncertainty(index(0), index(1));
+    auto& variance = data_variance(index(0), index(1));
     auto& intensity = data_intensity(index(0), index(1));
-
-    // 2. Update consistency checking layers
+    auto& n_sample = data_n(index(0), index(1));
     auto& min_z = data_min_z(index(0), index(1));
     auto& max_z = data_max_z(index(0), index(1));
+    auto& diff_z = data_diff_z(index(0), index(1));
 
-    // 3. Update statistics layers
-    auto& n_sample = data_n(index(0), index(1));
-    auto& sample_maen = data_mu(index(0), index(1));
-    auto& sample_variance = data_sigma2(index(0), index(1));
-
+    // Initialize height attributes
     if (isEmptyAt(index))
     {
-      // 1. Initialize height attributes
-      elevation = point.z;              // at(layer_elevation, index) = point.z
-      uncertainty = point_uncertainty;  // at(layer_variance, index) = point_uncertainty
-      intensity = point.intensity;      // at(layer_intensity, index) = point.intensity
-
-      // 2. Initialize consistency check layers
+      elevation = point.z;          // at(layer_elevation, index) = point.z
+      variance = 0;                 // at(layer_variance, index) = point_variance
+      intensity = point.intensity;  // at(layer_intensity, index) = point.intensity
+      n_sample = 1;                 // at(layer_measured_num_, index) = 1
       min_z = point.z;
       max_z = point.z;
-
-      // 3. Initialize statistics layers: mu, sigma2, n
-      data_mu(index(0), index(1)) = point.z;  // at(layer_statistics_mu_, index) = point.z
-      data_sigma2(index(0), index(1)) = 0;    // at(layer_statistics_sigma2_, index) = 0;
-      data_n(index(0), index(1)) = 1;         // at(layer_statistics_n_, index) = 1
+      diff_z = 0;
 
       continue;
     }
 
-    // Enough elevation update
-    if (uncertainty < 0.5)
-      continue;
-
-    // 1. Elevation update
-    if (method == "KalmanFilter")
-    {
-      doKF(elevation, uncertainty, point.z, point_uncertainty);
-      doKF(intensity, uncertainty, point.intensity, point_uncertainty);
-    }
-
-    else if (method == "EwmaFilter")
-    {
-      doEWMA(elevation, uncertainty, point.z, point_uncertainty);
-      doEWMA(intensity, uncertainty, point.intensity, point_uncertainty);
-    }
-
-    else if (method == "KalmanFilter+ConsistencyCheck")
-    {
-      doKF(elevation, uncertainty, point.z, point_uncertainty);
-      doKF(intensity, uncertainty, point.intensity, point_uncertainty);
-
-      // 2. Consistency check -> reset basic layers if inconsistency is detected
-      min_z = std::min(min_z, point.z);
-      max_z = std::max(max_z, point.z);
-      if (max_z - min_z > 0.2)
-      {
-        uncertainty = 1e+9;
-      }
-    }
-
-    else
-    {
-      std::cout << " [HeightMap] Warning: Unknown method for height update! \n";
-    }
-
-    // 3. Update statistics layers: mu, sigma2, n
+    // Update statistics: mu, sigma2, n
     // recursive update of mean and variance:
     // https://math.stackexchange.com/questions/374881/recursive-formula-for-variance
     n_sample += 1;
-    auto prev_sample_mean = sample_maen;
-    sample_maen = sample_maen + (point.z - sample_maen) / n_sample;
-    sample_variance = sample_variance + std::pow(prev_sample_mean, 2) - std::pow(sample_maen, 2) +
-                      (std::pow(point.z, 2) - sample_variance - std::pow(prev_sample_mean, 2)) / n_sample;
+    auto prev_elevation = elevation;
+    elevation = elevation + (point.z - elevation) / n_sample;
+    variance = variance + std::pow(prev_elevation, 2) - std::pow(elevation, 2) +
+               (std::pow(point.z, 2) - variance - std::pow(prev_elevation, 2)) / n_sample;
+
+    // For dynamic obstacle
+    min_z = std::min(min_z, point.z);
+    max_z = std::max(max_z, point.z);
+    diff_z = point.z - min_z;
+
+    if (diff_z > 0.3)
+    {
+      // reset the elevation 
+      elevation = point.z;
+      variance = 0;
+      n_sample = 1;
+
+      max_z = min_z = point.z;
+      // diff_z = 0;
+    }
   }
 }
 
@@ -220,10 +260,9 @@ void HeightMap::doKF(float& mu, float& sigma2, float point_z, float point_sigma2
   sigma2 = sigma2 * point_sigma2 / (sigma2 + point_sigma2);
 }
 
-void HeightMap::doEWMA(float& mu, float& sigma2, float point_z, float point_sigma2, float alpha)
+void HeightMap::doEWMA(float& mu, float point_z, float alpha)
 {
   mu = (1 - alpha) * mu + alpha * point_z;
-  sigma2 = (1 - alpha) * sigma2 + alpha * point_sigma2;
 }
 
 void HeightMap::smoothing()
@@ -248,7 +287,7 @@ void HeightMap::smoothing()
     for (grid_map::CircleIterator subiter(*this, thisGridPosition, 0.3); !subiter.isPastEnd(); ++subiter)
     {
       grid_map::Position3 nearGridPosition3;
-      if (!getPosition3(layer_elevation_, *subiter, nearGridPosition3))
+      if (!getPosition3(layer_height_, *subiter, nearGridPosition3))
         continue;
 
       if ((nearGridPosition3.head<2>() - thisGridPosition).norm() < 0.05)
@@ -260,7 +299,7 @@ void HeightMap::smoothing()
     if (n_sum == 0)
       continue;
 
-    auto& elevation = at(layer_elevation_, thisGrid);
+    auto& elevation = at(layer_height_, thisGrid);
     const auto& elevation_bottom = at("height_ground", thisGrid);
     // Smooth only potentially ground cell
     if (elevation - elevation_bottom > 0.15)
@@ -272,32 +311,17 @@ void HeightMap::smoothing()
 
 const std::string& HeightMap::getHeightLayer() const
 {
-  return layer_elevation_;
-}
-
-const std::string& HeightMap::getUncertaintyLayer() const
-{
-  return layer_uncertainty_;
+  return layer_height_;
 }
 
 const grid_map::GridMap::Matrix& HeightMap::getHeightMatrix() const
 {
-  return get(layer_elevation_);
+  return get(layer_height_);
 }
 
 grid_map::GridMap::Matrix& HeightMap::getHeightMatrix()
 {
-  return get(layer_elevation_);
-}
-
-const grid_map::GridMap::Matrix& HeightMap::getUncertaintyMatrix() const
-{
-  return get(layer_uncertainty_);
-}
-
-grid_map::GridMap::Matrix& HeightMap::getUncertaintyMatrix()
-{
-  return get(layer_uncertainty_);
+  return get(layer_height_);
 }
 
 bool HeightMap::isEmptyAt(const grid_map::Index& index) const
@@ -308,6 +332,41 @@ bool HeightMap::isEmptyAt(const grid_map::Index& index) const
 bool HeightMap::isEmptyAt(const std::string& layer, const grid_map::Index& index) const
 {
   return !std::isfinite(at(layer, index));
+}
+
+float HeightMap::getMaxHeight() const
+{
+  const auto& data = getHeightMatrix();
+
+  // https://www.geeksforgeeks.org/difference-between-stdnumeric_limitst-min-max-and-lowest-in-cpp/
+  auto fillNaNForFindingMaxVal = data.array().isNaN().select(std::numeric_limits<double>::lowest(), data);
+  float max_height = fillNaNForFindingMaxVal.maxCoeff();
+
+  return max_height;
+}
+
+float HeightMap::getMinHeight() const
+{
+  const auto& data = getHeightMatrix();
+
+  auto fillNaNForFindingMinVal = data.array().isNaN().select(std::numeric_limits<double>::max(), data);
+  float min_height = fillNaNForFindingMinVal.minCoeff();
+
+  return min_height;
+}
+
+std::tuple<float, float> HeightMap::getMinMaxHeight() const
+{
+  const auto& data = getHeightMatrix();
+
+  // https://www.geeksforgeeks.org/difference-between-stdnumeric_limitst-min-max-and-lowest-in-cpp/
+  auto fillNaNForFindingMaxVal = data.array().isNaN().select(std::numeric_limits<double>::lowest(), data);
+  auto fillNaNForFindingMinVal = data.array().isNaN().select(std::numeric_limits<double>::max(), data);
+
+  float min_value = fillNaNForFindingMinVal.minCoeff();
+  float max_value = fillNaNForFindingMaxVal.maxCoeff();
+
+  return { min_value, max_value };
 }
 
 // // Note: Only for local map
@@ -379,8 +438,8 @@ bool HeightMap::isEmptyAt(const std::string& layer, const grid_map::Index& index
 //         if (!isValid(grid))
 //             continue;
 
-//         const auto &elevation = at(layer_elevation_, grid);
-//         const auto &variance = at(layer_uncertainty_, grid);
+//         const auto &elevation = at(layer_height_, grid);
+//         const auto &variance = at(layer_variance_, grid);
 //         const auto &max_height = at("max_height", grid);
 //         if (!std::isnan(max_height) && elevation > max_height)
 //         {
@@ -403,8 +462,8 @@ bool HeightMap::isEmptyAt(const std::string& layer, const grid_map::Index& index
 
 //         if (isValid(grid))
 //         {
-//             at(layer_elevation_, grid) = NAN;
-//             at(layer_uncertainty_, grid) = NAN;
+//             at(layer_height_, grid) = NAN;
+//             at(layer_variance_, grid) = NAN;
 //         }
 //     }
 // }

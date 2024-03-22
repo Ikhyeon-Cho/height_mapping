@@ -47,7 +47,7 @@ private:
   ros::Publisher pub_map_region_{ pnh_.advertise<visualization_msgs::Marker>("/height_mapping/map_region", 1) };
 
 private:
-  grid_map::HeightMap map_;
+  grid_map::HeightMap map_{ 10, 10, 0.1 };  // arbitrary size -> will be changed with the incoming message
   grid_map::GridMap feature_map_;
 };
 

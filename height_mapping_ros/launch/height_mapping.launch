@@ -13,7 +13,7 @@
   </node>
 
   <!-- Height Map Visualization -->
-  <node pkg="height_mapping" type="height_map_visualization_node" name="height_map_visualization"
+  <node pkg="height_mapping" type="height_map_visualization_node" name="heightmap_visualization"
     output="screen" />
 
   <!-- Global Mapping -->

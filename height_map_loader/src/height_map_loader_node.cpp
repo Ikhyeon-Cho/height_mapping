@@ -1,20 +1,20 @@
 /*
- * height_map_visualization_node.cpp
+ * height_map_loader_node.cpp
  *
- *  Created on: Feb 12, 2024
+ *  Created on: Mar 21, 2024
  *      Author: Ikhyeon Cho
  *	 Institute: Korea Univ. ISR (Intelligent Systems & Robotics) Lab
  *       Email: tre0430@korea.ac.kr
  */
 
 #include <ros/ros.h>
-#include "height_mapping/HeightMapVisualization.h"
+#include "heightmap_loader/HeightMapLoader.h"
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "heightmap_visualization");
+  ros::init(argc, argv, "heightmap_loader");
 
-  HeightMapVisualization height_map_visualization_node;
+  HeightMapLoader heightmap_loader_node;
 
   ros::spin();
 

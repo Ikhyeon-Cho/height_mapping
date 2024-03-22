@@ -33,6 +33,9 @@ class HeightMapping
 public:
   HeightMapping();
 
+  static std::pair<bool, pcl::PointCloud<pcl::PointXYZI>::Ptr>
+  getGridDownsampledCloud(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, grid_map::HeightMap& map);
+
   void updateHeight(const sensor_msgs::PointCloud2ConstPtr& msg);
 
   void updatePosition(const ros::TimerEvent& event);

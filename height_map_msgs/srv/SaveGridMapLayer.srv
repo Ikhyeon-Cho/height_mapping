@@ -1,0 +1,9 @@
+# SaveGridMapLayer.srv
+
+# Request
+string layer_name
+string filename
+---
+# Response
+bool success
+string file_path

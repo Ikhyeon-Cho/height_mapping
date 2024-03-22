@@ -14,6 +14,9 @@
 #include <grid_map_ros/GridMapRosConverter.hpp>
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include "height_map_msgs/SaveGridMapLayer.h"
+
+#include <grid_map_cv/GridMapCvConverter.hpp>
 
 class HeightMapMsgs
 {
