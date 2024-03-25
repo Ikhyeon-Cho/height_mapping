@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_service_files(
   FILES
-  SaveGridMapLayer.srv
+  SaveLayerToImage.srv
 )
 generate_messages(
   DEPENDENCIES

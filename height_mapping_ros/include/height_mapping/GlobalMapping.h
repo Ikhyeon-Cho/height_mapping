@@ -25,20 +25,24 @@
 #include <height_map_msgs/HeightMapConverter.h>
 
 #include <opencv2/opencv.hpp>
+#include <filesystem>
+#include <yaml-cpp/yaml.h>
 
 class GlobalMapping
 {
 public:
   GlobalMapping();
 
-  void registerLocalMap(const sensor_msgs::PointCloud2ConstPtr& msg);
+  void updateGlobalMap(const sensor_msgs::PointCloud2ConstPtr& msg);
 
   void visualize(const ros::TimerEvent& event);
 
   bool clearMap(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 
-  bool saveLayerToImage(height_map_msgs::SaveGridMapLayer::Request& request,
-                        height_map_msgs::SaveGridMapLayer::Response& response);
+  bool saveLayerToImage(height_map_msgs::SaveLayerToImage::Request& request,
+                        height_map_msgs::SaveLayerToImage::Response& response);
+
+  bool saveMapToImage(const std::string& layer, const std::string& file_path);
 
   // bool saveAsPcd(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 
@@ -67,7 +71,7 @@ private:
   double map_visualization_rate_{ pnh_.param<double>("globalMapVisualizationRate", 1.0) };
 
   // ROS
-  ros::Subscriber sub_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &GlobalMapping::registerLocalMap, this) };
+  ros::Subscriber sub_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &GlobalMapping::updateGlobalMap, this) };
   ros::Publisher pub_globalmap_{ pnh_.advertise<sensor_msgs::PointCloud2>(globalmap_topic_, 1) };
   ros::Publisher pub_map_region_{ pnh_.advertise<visualization_msgs::Marker>(map_region_topic_, 1) };
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(height_map_loader)
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 find_package(PCL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
     height_map_core
     height_map_msgs
 )
+find_package(yaml-cpp REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS 
@@ -35,4 +36,5 @@ add_executable(height_map_loader_node src/height_map_loader_node.cpp
 target_link_libraries(height_map_loader_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
 )
