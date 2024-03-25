@@ -39,5 +39,5 @@ global_mapping:
   globalMapVisualizationRate: 1.0
 
   # Map saver parameters
-  mapSaveDir: "$(find height_mapping)/map"
+  mapSaveDir: "$(find height_mapping)/map_image"
 

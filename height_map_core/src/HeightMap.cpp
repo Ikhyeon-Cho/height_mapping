@@ -243,7 +243,7 @@ void HeightMap::update(const pcl::PointCloud<pcl::PointXYZI>& pointcloud)
 
     if (diff_z > 0.3)
     {
-      // reset the elevation 
+      // reset the elevation
       elevation = point.z;
       variance = 0;
       n_sample = 1;
@@ -336,37 +336,12 @@ bool HeightMap::isEmptyAt(const std::string& layer, const grid_map::Index& index
 
 float HeightMap::getMaxHeight() const
 {
-  const auto& data = getHeightMatrix();
-
-  // https://www.geeksforgeeks.org/difference-between-stdnumeric_limitst-min-max-and-lowest-in-cpp/
-  auto fillNaNForFindingMaxVal = data.array().isNaN().select(std::numeric_limits<double>::lowest(), data);
-  float max_height = fillNaNForFindingMaxVal.maxCoeff();
-
-  return max_height;
+  return HeightMapMath::getMaxVal(*this, getHeightLayer());
 }
 
 float HeightMap::getMinHeight() const
 {
-  const auto& data = getHeightMatrix();
-
-  auto fillNaNForFindingMinVal = data.array().isNaN().select(std::numeric_limits<double>::max(), data);
-  float min_height = fillNaNForFindingMinVal.minCoeff();
-
-  return min_height;
-}
-
-std::tuple<float, float> HeightMap::getMinMaxHeight() const
-{
-  const auto& data = getHeightMatrix();
-
-  // https://www.geeksforgeeks.org/difference-between-stdnumeric_limitst-min-max-and-lowest-in-cpp/
-  auto fillNaNForFindingMaxVal = data.array().isNaN().select(std::numeric_limits<double>::lowest(), data);
-  auto fillNaNForFindingMinVal = data.array().isNaN().select(std::numeric_limits<double>::max(), data);
-
-  float min_value = fillNaNForFindingMinVal.minCoeff();
-  float max_value = fillNaNForFindingMaxVal.maxCoeff();
-
-  return { min_value, max_value };
+  return HeightMapMath::getMinVal(*this, getHeightLayer());
 }
 
 // // Note: Only for local map
@@ -467,4 +442,22 @@ std::tuple<float, float> HeightMap::getMinMaxHeight() const
 //         }
 //     }
 // }
+
 }  // namespace grid_map
+
+float HeightMapMath::getMinVal(const grid_map::HeightMap& map, const std::string& layer)
+{
+  const auto& data = map[layer];
+
+  auto fillNaNForFindingMinVal = data.array().isNaN().select(std::numeric_limits<double>::max(), data);
+  return fillNaNForFindingMinVal.minCoeff();
+}
+
+float HeightMapMath::getMaxVal(const grid_map::HeightMap& map, const std::string& layer)
+{
+  const auto& data = map[layer];
+
+  // https://www.geeksforgeeks.org/difference-between-stdnumeric_limitst-min-max-and-lowest-in-cpp/
+  auto fillNaNForFindingMaxVal = data.array().isNaN().select(std::numeric_limits<double>::lowest(), data);
+  return fillNaNForFindingMaxVal.maxCoeff();
+}

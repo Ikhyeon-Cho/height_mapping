@@ -16,8 +16,12 @@
 
 class HeightMapConverter
 {
+  const static int VALID_PIXEL_MIN = 100;  // lower than this value is an invalid pixel (unexplored region)
+  const static int VALID_PIXEL_MAX = 255;
+
 public:
-  static bool fromGrayImage(const cv::Mat& img, grid_map::HeightMap& map);
+  static bool fromGrayImage(const cv::Mat& img, float min_val, float max_val, grid_map::HeightMap& map,
+                            const std::string& layer);
 
   static bool toGrayImage(const grid_map::HeightMap& map, const std::string& layer, cv::Mat& img, float min_value,
                           float max_value);

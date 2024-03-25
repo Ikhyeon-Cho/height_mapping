@@ -1,31 +1,26 @@
 /*
- * HeightMapLoader.h
+ * HeightMapSaver.h
  *
- *  Created on: Mar 21, 2024
+ *  Created on: Mar 22, 2024
  *      Author: Ikhyeon Cho
  *	 Institute: Korea Univ. ISR (Intelligent Systems & Robotics) Lab
  *       Email: tre0430@korea.ac.kr
  */
 
-#ifndef HEIGHT_MAP_LOADER_H
-#define HEIGHT_MAP_LOADER_H
+#ifndef HEIGHT_MAP_SAVER_H
+#define HEIGHT_MAP_SAVER_H
 
 #include <ros/ros.h>
 
 #include <height_map_core/HeightMap.h>
 #include <height_map_msgs/HeightMapMsgs.h>
-#include <height_map_msgs/HeightMapConverter.h>
 
 #include <opencv2/opencv.hpp>
-#include <filesystem>
-#include <yaml-cpp/yaml.h>
 
-class HeightMapLoader
+class HeightMapSaver
 {
 public:
-  HeightMapLoader();
-
-  // bool readFromPCD(const std::string& file_path);
+  HeightMapSaver();
 
   void visualizeHeightMap(const ros::WallTimerEvent& event);
 
@@ -40,11 +35,8 @@ private:
   std::string map_frame_{ nh_.param<std::string>("mapFrame", "map") };
 
   // Image parameters
-  std::string image_path_{ pnh_.param<std::string>("imagePath", "/home/isr/Downloads") };
-  std::string map_name_{ pnh_.param<std::string>("map", "map_name") };
-
-  // Map parameters
-  double grid_resolution_{ pnh_.param<double>("gridResolution", 0.1) };
+  std::string image_dir_{ pnh_.param<std::string>("imageDir", "/home/isr/Downloads") };
+  std::string image_path_{ image_dir_ + pnh_.param<std::string>("imageFile", "elevation.png") };
 
   // Node parameters
   double map_visualization_rate_{ pnh_.param<double>("mapVisualizationRate", 1.0) };
@@ -54,10 +46,10 @@ private:
   ros::Publisher pub_heightcloud_{ pnh_.advertise<sensor_msgs::PointCloud2>("elevation_cloud", 1) };
   ros::Publisher pub_map_region_{ pnh_.advertise<visualization_msgs::Marker>("map_region", 1) };
   ros::WallTimer visualization_timer_{ nh_.createWallTimer(ros::WallDuration(1.0 / map_visualization_rate_),
-                                                           &HeightMapLoader::visualizeHeightMap, this, false, false) };
+                                                           &HeightMapSaver::visualizeHeightMap, this, false, false) };
 
   // Height Map
-  grid_map::HeightMap map_{ 0, 0, grid_resolution_ };
+  grid_map::HeightMap map_{ 0, 0, 0.1 };
 };
 
-#endif  // HEIGHT_MAP_LOADER_H
+#endif  // HEIGHT_MAP_SAVER_H

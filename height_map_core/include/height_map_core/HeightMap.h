@@ -40,7 +40,6 @@ public:
 
   float getMaxHeight() const;
   float getMinHeight() const;
-  std::tuple<float, float> getMinMaxHeight() const;
 
 private:
   // Helper Functions
@@ -64,5 +63,13 @@ private:
 };
 
 }  // namespace grid_map
+
+class HeightMapMath
+{
+public:
+  static float getMinVal(const grid_map::HeightMap& map, const std::string& layer);
+
+  static float getMaxVal(const grid_map::HeightMap& map, const std::string& layer);
+};
 
 #endif  // HEIGHT_MAP_H

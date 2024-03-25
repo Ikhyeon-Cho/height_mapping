@@ -9,19 +9,6 @@
 
 #include "height_map_msgs/HeightMapConverter.h"
 
-bool HeightMapConverter::fromGrayImage(const cv::Mat& image, grid_map::HeightMap& map)
-{
-  // Set geometry of the map
-  if (!grid_map::GridMapCvConverter::initializeFromImage(image, map.getResolution(), map, map.getPosition()))
-    return false;
-
-  // Convert to Height map
-  if (!grid_map::GridMapCvConverter::addLayerFromImage<unsigned char, 1>(image, map.getHeightLayer(), map, -20, 20))
-    return false;
-
-  return true;
-}
-
 bool HeightMapConverter::toGrayImage(const grid_map::HeightMap& map, const std::string& layer, cv::Mat& img,
                                      float min_value, float max_value)
 {
@@ -38,8 +25,8 @@ bool HeightMapConverter::toGrayImage(const grid_map::HeightMap& map, const std::
       return val;
   });
 
-  auto scaler = (255 - 50) / (max_value - min_value);
-  auto offset = (50 * max_value - 255 * min_value) / (max_value - min_value);
+  auto scaler = (VALID_PIXEL_MAX - VALID_PIXEL_MIN) / (max_value - min_value);
+  auto offset = (VALID_PIXEL_MIN * max_value - VALID_PIXEL_MAX * min_value) / (max_value - min_value);
 
   data = data * scaler + Eigen::MatrixXf::Constant(data.rows(), data.cols(), offset);
 
@@ -53,6 +40,34 @@ bool HeightMapConverter::toGrayImage(const grid_map::HeightMap& map, const std::
     std::cout << "Could not convert the height map to image" << std::endl;
     return false;
   }
+  return true;
+}
+
+bool HeightMapConverter::fromGrayImage(const cv::Mat& image, float min_value, float max_value, grid_map::HeightMap& map,
+                                       const std::string& layer)
+{
+  // Set geometry of the map
+  if (map.getSize().x() != image.cols || map.getSize().y() != image.rows)
+  {
+    bool success =
+        grid_map::GridMapCvConverter::initializeFromImage(image, map.getResolution(), map, map.getPosition());
+    if (!success)
+      return false;
+  }
+
+  // Convert to Height map
+  if (!grid_map::GridMapCvConverter::addLayerFromImage<unsigned char, 1>(image, layer, map, min_value, max_value))
+    return false;
+
+  // Change the values lower than invalid_pixel_cutoff to NaN
+  auto invalid_pixel_cutoff = min_value + 1e-2;
+  map[layer] = map[layer].unaryExpr([invalid_pixel_cutoff](float val) {
+    if (val < invalid_pixel_cutoff)
+      return std::numeric_limits<float>::quiet_NaN();
+    else
+      return val;
+  });
+
   return true;
 }
 

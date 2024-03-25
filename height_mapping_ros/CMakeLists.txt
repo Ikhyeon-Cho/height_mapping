@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
     height_map_core
     height_map_msgs
 )
+find_package(yaml-cpp REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS 
@@ -41,10 +42,10 @@ target_link_libraries(height_mapping_node
   ${catkin_LIBRARIES}
 )
 
-add_executable(height_map_visualization_node src/height_map_visualization_node.cpp
+add_executable(heightmap_visualization_node src/heightmap_visualization_node.cpp
   src/HeightMapVisualization.cpp
 )
-target_link_libraries(height_map_visualization_node
+target_link_libraries(heightmap_visualization_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
 )
@@ -55,4 +56,14 @@ add_executable(global_mapping_node src/global_mapping_node.cpp
 target_link_libraries(global_mapping_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
 )
+
+# add_executable(heightmap_saver_node src/heightmap_saver_node.cpp
+#   src/HeightMapSaver.cpp
+# )
+# target_link_libraries(heightmap_saver_node
+#   ${PCL_LIBRARIES}
+#   ${catkin_LIBRARIES}
+#   ${YAML_CPP_LIBRARIES}
+# )
