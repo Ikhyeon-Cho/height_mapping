@@ -22,23 +22,21 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 // Height Map
-#include <height_map_core/HeightMap.h>
+#include <height_map_core/height_map_core.h>
 #include <height_map_msgs/HeightMapMsgs.h>
+#include <height_map_pcl/cloud_preprocessors.h>
 // #include <height_map_core/DescriptorMap.h>
 
-using pType = pcl::PointXYZI;
+using PointT = pcl::PointXYZI;
 
 class HeightMapping
 {
 public:
   HeightMapping();
 
-  static std::pair<bool, pcl::PointCloud<pcl::PointXYZI>::Ptr>
-  getGridDownsampledCloud(const pcl::PointCloud<pcl::PointXYZI>& pointcloud, grid_map::HeightMap& map);
+  void measurementUpdate(const sensor_msgs::PointCloud2ConstPtr& msg);
 
-  void updateHeight(const sensor_msgs::PointCloud2ConstPtr& msg);
-
-  void updatePosition(const ros::TimerEvent& event);
+  void updateMapPosition(const ros::TimerEvent& event);
 
   void visualize(const ros::TimerEvent& event);
 
@@ -67,23 +65,32 @@ private:
   double map_length_x_{ nh_.param<double>("mapLengthX", 12) };
   double map_length_y_{ nh_.param<double>("mapLengthY", 12) };
 
+  // Height Estimator Parameters
+  std::string height_estimator_type_{ nh_.param<std::string>("heightEstimatorType", "KalmanFilter") };
+
   // Duration
   double pose_update_rate_{ nh_.param<double>("poseUpdateRate", 20) };
   double map_visualization_rate_{ nh_.param<double>("mapVisualizationRate", 10) };
 
   // ROS
-  ros::Subscriber sub_lidar_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &HeightMapping::updateHeight, this) };
-  ros::Publisher pub_registered_pointcloud_{ nh_.advertise<sensor_msgs::PointCloud2>("cloud_registered", 1) };
+  ros::Subscriber sub_lidar_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &HeightMapping::measurementUpdate,
+                                                       this) };
+  ros::Publisher pub_downsampled_pointcloud_{ nh_.advertise<sensor_msgs::PointCloud2>("cloud_downsampled", 1) };
   ros::Publisher pub_heightmap_{ nh_.advertise<grid_map_msgs::GridMap>(heightmap_topic_, 1) };
   ros::Publisher pub_map_region_{ nh_.advertise<visualization_msgs::Marker>("map_region", 1) };
   ros::Publisher pub_featuremap_{ nh_.advertise<grid_map_msgs::GridMap>(featuremap_topic_, 1) };
 
-  ros::Timer pose_update_timer_{ nh_.createTimer(pose_update_rate_, &HeightMapping::updatePosition, this) };
+  ros::Timer pose_update_timer_{ nh_.createTimer(pose_update_rate_, &HeightMapping::updateMapPosition, this) };
   ros::Timer map_visualization_timer_{ nh_.createTimer(map_visualization_rate_, &HeightMapping::visualize, this) };
 
 private:
   grid_map::HeightMap map_{ map_length_x_, map_length_y_, grid_resolution_ };
-  // DescriptorMap descriptor_map_{ map_ };
+  height_map::HeightEstimatorBase::Ptr height_estimator_;
+
+  // Cloud processor
+  // height_map::PointCloudProcessor cloud_preprocessor_; // For PointXYZ type
+  height_map::IntensityCloudProcessor cloud_preprocessor_;
+  // height_map::RGBCloudProcessor cloud_preprocessor_; // For PointXYZRGB type
 };
 
 #endif  // HEIGHT_MAPPING_H

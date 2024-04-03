@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
     pcl_conversions
     height_map_core
     height_map_msgs
+    height_map_pcl
 )
 find_package(yaml-cpp REQUIRED)
 
@@ -21,6 +22,7 @@ catkin_package(
     pcl_conversions
     height_map_core
     height_map_msgs
+    height_map_pcl
 )
 
 ###########
