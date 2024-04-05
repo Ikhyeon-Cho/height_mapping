@@ -13,8 +13,11 @@
 #include "height_map_core/HeightMap.h"
 
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
+
+// #include <pcl/common/eigen.h>
 
 namespace height_map
 {

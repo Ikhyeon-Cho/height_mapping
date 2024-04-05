@@ -12,10 +12,6 @@
 
 #include <grid_map_core/grid_map_core.hpp>
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/common/eigen.h>
-
 namespace grid_map
 {
 class HeightMap : public GridMap

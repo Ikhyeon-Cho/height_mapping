@@ -14,7 +14,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-namespace ros_utils
+namespace utils
 {
 namespace tf
 {
@@ -98,6 +98,6 @@ static Eigen::Affine3d toAffine3d(const geometry_msgs::Transform& transform)
   return transform_eigen;
 }
 }  // namespace tf
-}  // namespace ros_utils
+}  // namespace utils
 
 #endif  // ROS_UTILS_TRANSFORM_H

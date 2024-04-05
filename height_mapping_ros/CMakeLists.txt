@@ -36,24 +36,27 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(height_mapping_node src/height_mapping_node.cpp
-  src/HeightMapping.cpp
+add_executable(height_mapping_node
+  src/height_mapping/height_mapping_node.cpp
+  src/height_mapping/HeightMapping.cpp
 )
 target_link_libraries(height_mapping_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
 )
 
-add_executable(heightmap_visualization_node src/heightmap_visualization_node.cpp
-  src/HeightMapVisualization.cpp
+add_executable(heightmap_visualization_node 
+  src/height_map_visualization/heightmap_visualization_node.cpp
+  src/height_map_visualization/HeightMapVisualization.cpp
 )
 target_link_libraries(heightmap_visualization_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
 )
 
-add_executable(global_mapping_node src/global_mapping_node.cpp
-  src/GlobalMapping.cpp
+add_executable(global_mapping_node 
+  src/global_mapping/global_mapping_node.cpp
+  src/global_mapping/GlobalMapping.cpp
 )
 target_link_libraries(global_mapping_node
   ${PCL_LIBRARIES}

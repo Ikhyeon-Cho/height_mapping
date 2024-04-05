@@ -26,7 +26,7 @@ using PointCloud = pcl::PointCloud<T>;
 template <typename T>
 using PointCloudPtr = typename PointCloud<T>::Ptr;
 
-namespace ros_utils
+namespace utils
 {
 namespace pcl
 {
@@ -43,17 +43,17 @@ static PointCloudPtr<T> transformPointcloud(const PointCloudPtr<T>& input,
   std::string source_frame(input->header.frame_id);
   if (source_frame.empty())
   {
-    ROS_ERROR_STREAM(" [ros_utils::pcl] Warning: Transform failure -  pointcloud has no frame id");
+    ROS_ERROR_STREAM(" [utils::pcl] Warning: Transform failure -  pointcloud has no frame id");
     return input;
   }
 
   if (input->empty())
   {
-    ROS_ERROR_STREAM(" [ros_utils::pcl] Warning: Transform failure -  pointcloud is empty");
+    ROS_ERROR_STREAM(" [utils::pcl] Warning: Transform failure -  pointcloud is empty");
     return input;
   }
 
-  auto transform_affine3d = ros_utils::tf::toAffine3d(transform_stamped.transform);
+  auto transform_affine3d = utils::tf::toAffine3d(transform_stamped.transform);
 
   auto output = boost::make_shared<PointCloud<T>>();
   ::pcl::transformPointCloud(*input, *output, transform_affine3d);
@@ -172,6 +172,6 @@ static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T>& input, d
 }
 
 }  // namespace pcl
-};  // namespace ros_utils
+};  // namespace utils
 
 #endif  // ROS_UTILS_POINTCLOUD_H

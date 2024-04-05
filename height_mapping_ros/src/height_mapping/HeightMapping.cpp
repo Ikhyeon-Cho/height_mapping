@@ -13,7 +13,7 @@
 HeightMapping::HeightMapping()
 {
   // Set frame id
-  map_.setFrameId(map_frame_);
+  map_.setFrameId(map_frame);
 
   // Set height estimator
   if (height_estimator_type_ == "KalmanFilter")
@@ -42,53 +42,51 @@ void HeightMapping::measurementUpdate(const sensor_msgs::PointCloud2ConstPtr& ms
   pcl::fromROSMsg(*msg, *cloud_raw);  // moveFromROSMsg is faster (100 ~ 200 us) than fromROSMsg
 
   // Get Transform from sensor to base_link
-  const auto& sensor_frame = msg->header.frame_id;
-  auto [get_transform_s2b, sensor_to_base] = tf_handler_.getTransform(sensor_frame, baselink_frame_);
+  auto sensor_frame = msg->header.frame_id;
+  auto [get_transform_s2b, sensor_to_base] = tf_tree_.getTransform(sensor_frame, baselink_frame);
   if (!get_transform_s2b)
     return;
 
   // Transform pointcloud to base_link frame
-  auto cloud_base = ros_utils::pcl::transformPointcloud<PointT>(cloud_raw, sensor_to_base);
+  auto cloud_at_base = utils::pcl::transformPointcloud<PointT>(cloud_raw, sensor_to_base);
 
   // Filter pointcloud by height and range
   auto cloud_filtered =
-      ros_utils::pcl::filterPointcloudByField<PointT>(cloud_base, "z", height_min_thrsh_, height_max_thrsh_);
-  cloud_filtered = ros_utils::pcl::filterPointcloudByRange<PointT>(cloud_filtered, range_min_thrsh_, range_max_thrsh_);
+      utils::pcl::filterPointcloudByField<PointT>(cloud_at_base, "z", height_min_thrsh_, height_max_thrsh_);
+  cloud_filtered = utils::pcl::filterPointcloudByRange<PointT>(cloud_filtered, range_min_thrsh_, range_max_thrsh_);
 
   // Get Transform from base_link to map
-  auto [get_transform_b2m, base_to_map] = tf_handler_.getTransform(baselink_frame_, map_frame_);
+  auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
     return;
 
   // Transform pointcloud to map frame
-  auto cloud_map = ros_utils::pcl::transformPointcloud<PointT>(cloud_filtered, base_to_map);
-
-  auto start = std::chrono::high_resolution_clock::now();
+  auto cloud_at_map = utils::pcl::transformPointcloud<PointT>(cloud_filtered, base_to_map);
 
   // Downsampling of pointcloud by grid -> each grid cell has only one point (with max height)
-  auto [get_cloud_downsampled, cloud_downsampled] = cloud_preprocessor_.gridDownsampling(*cloud_map, map_);
+  auto [get_cloud_downsampled, cloud_downsampled] = cloud_preprocessor_.gridDownsampling(*cloud_at_map, map_);
   if (!get_cloud_downsampled)
     return;
 
-  auto [get_cloud_consistent, cloud_consistent] = cloud_preprocessor_.removeInconsistentPoints(*cloud_downsampled, map_);
+  auto [get_cloud_consistent, cloud_consistent] =
+      cloud_preprocessor_.removeInconsistentPoints(*cloud_downsampled, map_);
 
   // Estimate height of each grid cell
   height_estimator_->estimate(map_, *cloud_consistent);
 
-  auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-  std::cout << "Height mapping takes: " << duration.count() << " microseconds" << std::endl;
-
   // For Debug: Publish preprocessed pointcloud
-  sensor_msgs::PointCloud2 msg_pc;
-  pcl::toROSMsg(*cloud_consistent, msg_pc);
-  pub_downsampled_pointcloud_.publish(msg_pc);
+  if (debug_)
+  {
+    sensor_msgs::PointCloud2 msg_pc;
+    pcl::toROSMsg(*cloud_consistent, msg_pc);
+    pub_downsampled_pointcloud_.publish(msg_pc);
+  }
 }
 
 void HeightMapping::updateMapPosition(const ros::TimerEvent& event)
 {
   // Get Transform from base_link to map (localization pose)
-  auto [get_transform_b2m, base_to_map] = tf_handler_.getTransform(baselink_frame_, map_frame_);
+  auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
     return;
 
@@ -102,9 +100,4 @@ void HeightMapping::visualize(const ros::TimerEvent& event)
   grid_map_msgs::GridMap msg_heightmap;
   grid_map::GridMapRosConverter::toMessage(map_, msg_heightmap);
   pub_heightmap_.publish(msg_heightmap);
-
-  // Feature Map Visualization
-  // grid_map_msgs::GridMap msg_featuremap;
-  // grid_map::GridMapRosConverter::toMessage(descriptor_map_, msg_featuremap);
-  // pub_featuremap_.publish(msg_featuremap);
 }

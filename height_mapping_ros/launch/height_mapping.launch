@@ -16,8 +16,4 @@
   <node pkg="height_mapping" type="heightmap_visualization_node" name="heightmap_visualization"
     output="screen" />
 
-  <!-- Global Mapping -->
-  <node pkg="height_mapping" type="global_mapping_node" name="global_mapping"
-    output="screen" />
-
 </launch>

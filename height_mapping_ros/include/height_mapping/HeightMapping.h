@@ -42,17 +42,19 @@ public:
 
 private:
   ros::NodeHandle nh_{ "~" };
-  ros_utils::TransformHandler tf_handler_;
+  utils::TransformHandler tf_tree_;
 
   // Topics
   std::string pointcloud_topic_{ nh_.param<std::string>("pointCloudTopic", "/velodyne_points") };
   std::string heightmap_topic_{ nh_.param<std::string>("heightMapTopic", "elevation_grid") };
   std::string heightmap_cloud_topic_{ nh_.param<std::string>("heightMapCloudTopic", "elevation_cloud") };
   std::string featuremap_topic_{ nh_.param<std::string>("featureMapTopic", "elevation_feature") };
+  // Debug Flag
+  bool debug_{ nh_.param<bool>("publishDebugTopics", false) };
 
   // Frame Ids
-  std::string baselink_frame_{ nh_.param<std::string>("baselinkFrame", "base_link") };
-  std::string map_frame_{ nh_.param<std::string>("mapFrame", "map") };
+  std::string baselink_frame{ nh_.param<std::string>("baselinkFrame", "base_link") };
+  std::string map_frame{ nh_.param<std::string>("mapFrame", "map") };
 
   // Pointcloud Filter
   double height_min_thrsh_{ nh_.param<double>("minHeightThreshold", -0.5) };
@@ -88,8 +90,8 @@ private:
   height_map::HeightEstimatorBase::Ptr height_estimator_;
 
   // Cloud processor
-  // height_map::PointCloudProcessor cloud_preprocessor_; // For PointXYZ type
-  height_map::IntensityCloudProcessor cloud_preprocessor_;
+  // height_map::PointCloudProcessor cloud_preprocessor_;  // For PointXYZ type
+  height_map::IntensityCloudProcessor cloud_preprocessor_; // For PointXYZI type
   // height_map::RGBCloudProcessor cloud_preprocessor_; // For PointXYZRGB type
 };
 
