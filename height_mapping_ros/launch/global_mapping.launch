@@ -1,10 +1,8 @@
 <launch>
   <arg name="input_cloud" default="/velodyne_tilted/velodyne_points" />
-  <arg name="grid_resolution" default="0.1" />
 
   <include file="$(find height_mapping)/launch/height_mapping.launch">
     <arg name="input_cloud" value="$(arg input_cloud)" />
-    <arg name="grid_resolution" value="$(arg grid_resolution)" />
   </include>
 
   <!-- Global Mapping -->

@@ -13,7 +13,7 @@ namespace height_map
 {
 void KalmanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())
@@ -52,7 +52,7 @@ void KalmanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<p
 
 void KalmanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())
@@ -97,7 +97,7 @@ void KalmanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<p
 
 void KalmanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())

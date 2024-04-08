@@ -25,7 +25,6 @@
 #include <height_map_core/height_map_core.h>
 #include <height_map_msgs/HeightMapMsgs.h>
 #include <height_map_pcl/cloud_preprocessors.h>
-// #include <height_map_core/DescriptorMap.h>
 
 using PointT = pcl::PointXYZI;
 
@@ -75,12 +74,10 @@ private:
   double map_visualization_rate_{ nh_.param<double>("mapVisualizationRate", 10) };
 
   // ROS
-  ros::Subscriber sub_lidar_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &HeightMapping::measurementUpdate,
+  ros::Subscriber sub_pointcloud_{ nh_.subscribe(pointcloud_topic_, 10, &HeightMapping::measurementUpdate,
                                                        this) };
   ros::Publisher pub_downsampled_pointcloud_{ nh_.advertise<sensor_msgs::PointCloud2>("cloud_downsampled", 1) };
   ros::Publisher pub_heightmap_{ nh_.advertise<grid_map_msgs::GridMap>(heightmap_topic_, 1) };
-  ros::Publisher pub_map_region_{ nh_.advertise<visualization_msgs::Marker>("map_region", 1) };
-  ros::Publisher pub_featuremap_{ nh_.advertise<grid_map_msgs::GridMap>(featuremap_topic_, 1) };
 
   ros::Timer pose_update_timer_{ nh_.createTimer(pose_update_rate_, &HeightMapping::updateMapPosition, this) };
   ros::Timer map_visualization_timer_{ nh_.createTimer(map_visualization_rate_, &HeightMapping::visualize, this) };

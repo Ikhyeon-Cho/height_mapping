@@ -1,10 +1,9 @@
 height_mapping:
-
   # Topics
-  pointCloudTopic: "/velodyne_tilted/velodyne_points"
-  heightMapTopic: "elevation_grid"
-  heightMapCloudTopic: "elevation_cloud"
-  featureMapTopic: "elevation_feature"
+  pointCloudTopic: "/velodyne_tilted/velodyne_points" # See launch file argument
+  heightMapTopic: &grid_map_topic "/height_mapping/elevation_grid"
+  heightMapCloudTopic: &pointcloud_map_topic "/height_mapping/elevation_cloud"
+  mapRegionTopic: &map_region_topic "/height_mapping/map_region"
   publishDebugTopics: true
 
   # Frame Ids
@@ -28,7 +27,6 @@ height_mapping:
   mapVisualizationRate: 10
 
 global_mapping:
-
   # Topics
   globalMapTopic: "/height_mapping/elevation_cloud_global"
   mapRegionTopic: "/height_mapping/map_region_global"
@@ -44,3 +42,19 @@ global_mapping:
 
   # Map saver parameters
   mapSaveDir: "$(find height_mapping)/map_image"
+
+height_mapping_visualization:
+  grid_map_topic_topic: *grid_map_topic
+  grid_map_visualizations:
+    # Point cloud
+    - name: *pointcloud_map_topic
+      type: point_cloud
+      params:
+        layer: elevation
+    # Map region (green)
+    - name: *map_region_topic
+      type: map_region
+      params:
+        # color: 0xFF0000
+        color: 0x00FF00
+        line_width: 0.1

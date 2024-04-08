@@ -43,6 +43,8 @@ void GlobalMapping::mapping(const sensor_msgs::PointCloud2ConstPtr& msg)
   // Convert msg to pcl::PointCloud
   pcl::fromROSMsg(*msg, *heightmap_cloud_);
 
+  updateMeasuredIndices(map_, *heightmap_cloud_);
+
   // Update global map
   height_estimator_->estimate(map_, *heightmap_cloud_);
 }
@@ -51,17 +53,10 @@ void GlobalMapping::visualize(const ros::TimerEvent& event)
 {
   auto start = std::chrono::high_resolution_clock::now();
 
-  auto layer_to_visualize = { map_.getHeightLayer() };
-
-  auto map_cloud = toPointCloudMap(map_);
-  sensor_msgs::PointCloud2 map_cloud_msg;
-  pcl::toROSMsg(*map_cloud, map_cloud_msg);
-  pub_globalmap_.publish(map_cloud_msg);
-
   // Note: grid_map_msgs are not visualizable in large scale map -> use PointCloud2 instead
-  // sensor_msgs::PointCloud2 msg_pc;
-  // grid_map::GridMapRosConverter::toPointCloud(map_, map_.getHeightLayer(), msg_pc);
-  // pub_globalmap_.publish(msg_pc);
+  sensor_msgs::PointCloud2 cloud_msg;
+  HeightMapConverter::toPointCloud2(map_, map_.getLayers(), measured_indices_, cloud_msg);
+  pub_globalmap_.publish(cloud_msg);
 
   // Visualize map region
   visualization_msgs::Marker msg_map_region;
@@ -70,7 +65,26 @@ void GlobalMapping::visualize(const ros::TimerEvent& event)
 
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-  std::cout << "Global map visualization takes: " << duration.count() << " milliseconds" << std::endl;
+  ROS_INFO_THROTTLE(1.0, "Global map visualization takes: %ld milliseconds", duration.count());
+}
+
+void GlobalMapping::updateMeasuredIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud)
+{
+  // Save measured indices for efficient visualization
+  grid_map::Index cell_index;
+  grid_map::Position cell_position;
+  for (auto& point : cloud.points)
+  {
+    // Skip if the point is out of the map
+    cell_position << point.x, point.y;
+    if (!map.getIndex(cell_position, cell_index))
+      continue;
+
+    if (!map.isEmptyAt(cell_index))
+      continue;
+
+    measured_indices_.push_back(cell_index);
+  }
 }
 
 pcl::PointCloud<PointT>::Ptr GlobalMapping::toPointCloudMap(const grid_map::HeightMap& map)

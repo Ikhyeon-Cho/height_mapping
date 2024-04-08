@@ -26,12 +26,15 @@ public:
   static bool toGrayImage(const grid_map::HeightMap& map, const std::string& layer, cv::Mat& img, float min_value,
                           float max_value);
 
-  static void fromPointCloud(const sensor_msgs::PointCloud2& cloud, grid_map::HeightMap& map);
+  static void fromPointCloud2(const sensor_msgs::PointCloud2& cloud, grid_map::HeightMap& map);
 
-  static void toPointCloud(const grid_map::HeightMap& map, sensor_msgs::PointCloud2& cloud);
+  static void toPointCloud2(const grid_map::HeightMap& map, sensor_msgs::PointCloud2& cloud);
 
-  static void toPointCloud(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
+  static void toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
                            sensor_msgs::PointCloud2& cloud);
+
+  static void toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
+                           const std::vector<grid_map::Index>& measured_indices, sensor_msgs::PointCloud2& cloud);
 };
 
 // Helper functions

@@ -35,14 +35,14 @@ public:
 
 protected:
   template <typename PointT>
-  bool isValidCloud(const pcl::PointCloud<PointT>& cloud)
+  bool hasEmptyCloud(const pcl::PointCloud<PointT>& cloud)
   {
     if (cloud.empty())
     {
       std::cout << "\033[33m[ HeightEstimator] Warning: Input cloud is empty! \033[0m" << std::endl;
-      return false;
+      return true;
     }
-    return true;
+    return false;
   }
 };
 }  // namespace height_map

@@ -13,7 +13,7 @@ namespace height_map
 {
 void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())
@@ -48,7 +48,7 @@ void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::Point
 
 void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())
@@ -88,7 +88,7 @@ void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::Point
 
 void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())

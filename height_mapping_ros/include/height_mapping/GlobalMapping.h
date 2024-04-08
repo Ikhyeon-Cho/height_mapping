@@ -24,6 +24,7 @@
 #include <height_map_msgs/HeightMapMsgs.h>
 #include <height_map_msgs/HeightMapConverter.h>
 
+#include <unordered_set>
 #include <opencv2/opencv.hpp>
 #include <filesystem>
 #include <yaml-cpp/yaml.h>
@@ -51,8 +52,9 @@ public:
 private:
   // Helper functions
   pcl::PointCloud<PointT>::Ptr toPointCloudMap(const grid_map::HeightMap& map);
-
   std::pair<bool, pcl::PointCloud<PointT>::Ptr> downsampleCloud(const pcl::PointCloud<PointT>::ConstPtr& cloud);
+
+  void updateMeasuredIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud);
 
   ros::NodeHandle nh_{ "height_mapping" };
   ros::NodeHandle pnh_{ "~" };
@@ -99,6 +101,7 @@ private:
 
   // Height map cloud
   pcl::PointCloud<PointT>::Ptr heightmap_cloud_;
+  std::vector<grid_map::Index> measured_indices_;
 };
 
 #endif  // GLOBAL_MAPPING_H

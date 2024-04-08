@@ -13,7 +13,7 @@ namespace height_map
 {
 void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())
@@ -56,7 +56,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
 
 void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())
@@ -105,7 +105,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
 
 void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud)
 {
-  if (!isValidCloud(cloud))
+  if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId())

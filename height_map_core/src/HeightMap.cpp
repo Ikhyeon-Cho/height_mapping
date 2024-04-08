@@ -22,6 +22,13 @@ HeightMap::HeightMap(double length_x, double length_y, double grid_resolution)
   setBasicLayers({ layer_height_ });
 }
 
+bool HeightMap::hasHeightValue() const
+{
+  const auto& mat = getHeightMatrix();
+  auto allNaN = mat.array().unaryExpr([](float elem) { return std::isnan(elem); }).all();
+  return !allNaN;
+}
+
 void HeightMap::addLayer(const std::string& layer, float default_value)
 {
   if (!exists(layer))

@@ -71,7 +71,7 @@ bool HeightMapConverter::fromGrayImage(const cv::Mat& image, float min_value, fl
   return true;
 }
 
-void HeightMapConverter::fromPointCloud(const sensor_msgs::PointCloud2& cloud, grid_map::HeightMap& map)
+void HeightMapConverter::fromPointCloud2(const sensor_msgs::PointCloud2& cloud, grid_map::HeightMap& map)
 {
   // Assuming gridMap is already initialized with desired resolution and size
   // 1. Extract the layers from the point cloud
@@ -98,7 +98,7 @@ void HeightMapConverter::fromPointCloud(const sensor_msgs::PointCloud2& cloud, g
     if (!map.exists(layer))
     {
       map.add(layer);
-      std::cout << " Added " << layer << " layer to the grid map" << std::endl;
+      std::cout << "[@ HeightMapConverter] Added " << layer << " layer to the height map" << std::endl;
     }
   }
   if (has_rgb)
@@ -108,12 +108,11 @@ void HeightMapConverter::fromPointCloud(const sensor_msgs::PointCloud2& cloud, g
       map.add("r");
       map.add("g");
       map.add("b");
-      std::cout << " Added RGB layers to the grid map" << std::endl;
+      std::cout << "[@ HeightMapConverter] Added RGB layers to the height map" << std::endl;
     }
   }
 
   // 3. Iterate through the point cloud and populate the grid map
-
   // Initialize iterators
   sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
   sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
@@ -166,17 +165,127 @@ void HeightMapConverter::fromPointCloud(const sensor_msgs::PointCloud2& cloud, g
   }
 }
 
-void HeightMapConverter::toPointCloud(const grid_map::HeightMap& map, sensor_msgs::PointCloud2& cloud)
+void HeightMapConverter::toPointCloud2(const grid_map::HeightMap& map, sensor_msgs::PointCloud2& cloud)
 {
   // Convert to PointCloud
   grid_map::GridMapRosConverter::toPointCloud(map, map.getHeightLayer(), cloud);
 }
 
-void HeightMapConverter::toPointCloud(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
-                                      sensor_msgs::PointCloud2& cloud)
+void HeightMapConverter::toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
+                                       sensor_msgs::PointCloud2& cloud)
 {
   // Convert to PointCloud
   grid_map::GridMapRosConverter::toPointCloud(map, layers, map.getHeightLayer(), cloud);
+}
+
+void HeightMapConverter::toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
+                                       const std::vector<grid_map::Index>& measured_indices,
+                                       sensor_msgs::PointCloud2& cloud)
+{
+  // Header.
+  cloud.header.frame_id = map.getFrameId();
+  cloud.header.stamp.fromNSec(map.getTimestamp());
+  cloud.is_dense = false;
+
+  // Fields.
+  std::vector<std::string> fieldNames;
+  for (const auto& layer : layers)
+  {
+    if (layer == map.getHeightLayer())
+    {
+      fieldNames.push_back("x");
+      fieldNames.push_back("y");
+      fieldNames.push_back("z");
+    }
+    else if (layer == "color")
+    {
+      fieldNames.push_back("rgb");
+    }
+    else
+    {
+      fieldNames.push_back(layer);
+    }
+  }
+
+  cloud.fields.clear();
+  cloud.fields.reserve(fieldNames.size());
+  int offset = 0;
+
+  for (auto& name : fieldNames)
+  {
+    sensor_msgs::PointField pointField;
+    pointField.name = name;
+    pointField.count = 1;
+    pointField.datatype = sensor_msgs::PointField::FLOAT32;
+    pointField.offset = offset;
+    cloud.fields.push_back(pointField);
+    offset = offset + pointField.count * 4;  // 4 for sensor_msgs::PointField::FLOAT32
+  }                                          // offset value goes from 0, 4, 8, 12, ...
+
+  // Adjusted Resize: Instead of maxNumberOfPoints, use measured_indices.size().
+  size_t numberOfMeasuredPoints = measured_indices.size();
+  cloud.height = 1;
+  cloud.width = numberOfMeasuredPoints;  // Use the size of measured_indices.
+  cloud.point_step = offset;
+  cloud.row_step = cloud.width * cloud.point_step;
+  cloud.data.resize(cloud.height * cloud.row_step);
+
+  // Adjust Points section to iterate over measured_indices.
+  std::unordered_map<std::string, sensor_msgs::PointCloud2Iterator<float>> pointFieldIterators;
+  for (auto& name : fieldNames)
+  {
+    pointFieldIterators.insert(std::make_pair(name, sensor_msgs::PointCloud2Iterator<float>(cloud, name)));
+  }
+
+  // Iterate over measured_indices instead of using GridMapIterator.
+  int count = 0;
+  for (const auto& measured_index : measured_indices)
+  {
+    grid_map::Position3 position;
+    if (!map.getPosition3(map.getHeightLayer(), measured_index, position))
+      continue;
+
+    const auto& cell_position_x = (float)position.x();
+    const auto& cell_position_y = (float)position.y();
+    const auto& cell_height = (float)position.z();
+
+    for (auto& pointFieldIterator : pointFieldIterators)
+    {
+      const auto& pointField = pointFieldIterator.first;
+      auto& pointFieldValue = *(pointFieldIterator.second);
+      if (pointField == "x")
+      {
+        pointFieldValue = cell_position_x;
+      }
+      else if (pointField == "y")
+      {
+        pointFieldValue = cell_position_y;
+      }
+      else if (pointField == "z")
+      {
+        pointFieldValue = cell_height;
+      }
+      else if (pointField == "rgb")
+      {
+        pointFieldValue = (float) (map.at("color", measured_index));
+      }
+      else
+      {
+        pointFieldValue = (float)(map.at(pointField, measured_index));
+      }
+    }
+
+    for (auto& pointFieldIterator : pointFieldIterators)
+    {
+      ++(pointFieldIterator.second);
+    }
+    ++count;
+  }
+  cloud.height = 1;
+  cloud.width = count;
+  cloud.point_step = offset;
+  cloud.row_step = cloud.width * cloud.point_step;
+  cloud.data.resize(cloud.height * cloud.row_step);
 }
 
 void unpackRgb(uint32_t rgb_packed, uint8_t& r, uint8_t& g, uint8_t& b)
