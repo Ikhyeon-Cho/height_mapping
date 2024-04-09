@@ -44,7 +44,7 @@ global_mapping:
   mapSaveDir: "$(find height_mapping)/map_image"
 
 height_mapping_visualization:
-  grid_map_topic_topic: *grid_map_topic
+  grid_map_topic: *grid_map_topic
   grid_map_visualizations:
     # Point cloud
     - name: *pointcloud_map_topic

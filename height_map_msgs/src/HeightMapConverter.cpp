@@ -73,7 +73,6 @@ bool HeightMapConverter::fromGrayImage(const cv::Mat& image, float min_value, fl
 
 void HeightMapConverter::fromPointCloud2(const sensor_msgs::PointCloud2& cloud, grid_map::HeightMap& map)
 {
-  // Assuming gridMap is already initialized with desired resolution and size
   // 1. Extract the layers from the point cloud
   std::vector<std::string> layers;  // except x, y, z, rgb
   bool has_rgb = false;
@@ -117,19 +116,26 @@ void HeightMapConverter::fromPointCloud2(const sensor_msgs::PointCloud2& cloud, 
   sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
   sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
   sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
-
   std::vector<std::tuple<std::string, sensor_msgs::PointCloud2ConstIterator<float>>> iterator_fields;
+
   for (const auto& layer : layers)
     iterator_fields.emplace_back(layer, sensor_msgs::PointCloud2ConstIterator<float>(cloud, layer));
 
   // Populate the grid map
   for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
   {
-    grid_map::Position position(*iter_x, *iter_y);  // Create position from x, y values
+    grid_map::Position position(*iter_x, *iter_y);  // Create position from point x, y values
 
     // Check if the position falls within the grid map's bounds
     if (!map.isInside(position))
+    {
+      for (auto& iter_field : iterator_fields)
+      {
+        auto& [layer, iter] = iter_field;
+        ++iter;
+      }
       continue;
+    }
 
     map.atPosition(map.getHeightLayer(), position) = *iter_z;
 
@@ -144,11 +150,12 @@ void HeightMapConverter::fromPointCloud2(const sensor_msgs::PointCloud2& cloud, 
   // Populate the RGB layers
   if (!has_rgb)
     return;
+
   sensor_msgs::PointCloud2ConstIterator<float> iter_x2(cloud, "x");
   sensor_msgs::PointCloud2ConstIterator<float> iter_y2(cloud, "y");
   sensor_msgs::PointCloud2ConstIterator<uint32_t> iter_rgb(cloud, "rgb");
 
-  for (; iter_x2 != iter_x2.end(); ++iter_x2, ++iter_y2)
+  for (; iter_x2 != iter_x2.end(); ++iter_x2, ++iter_y2, ++iter_rgb)
   {
     grid_map::Position position(*iter_x2, *iter_y2);  // Create position from x, y values
 
@@ -267,7 +274,7 @@ void HeightMapConverter::toPointCloud2(const grid_map::HeightMap& map, const std
       }
       else if (pointField == "rgb")
       {
-        pointFieldValue = (float) (map.at("color", measured_index));
+        pointFieldValue = (float)(map.at("color", measured_index));
       }
       else
       {
