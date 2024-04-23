@@ -168,7 +168,7 @@ static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T>& input, d
 template <typename T>
 static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T>& input, double voxel_size)
 {
-  return filterPointcloudByVoxel(input, voxel_size, voxel_size, voxel_size);
+  return filterPointcloudByVoxel<T>(input, voxel_size, voxel_size, voxel_size);
 }
 
 }  // namespace pcl

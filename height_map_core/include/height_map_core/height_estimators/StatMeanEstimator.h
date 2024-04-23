@@ -1,5 +1,5 @@
 /*
- * SimpleMeanEstimator.h
+ * StatMeanEstimator.h
  *
  *  Created on: Apr 2, 2024
  *      Author: Ikhyeon Cho
@@ -14,11 +14,11 @@
 
 namespace height_map
 {
-class SimpleMeanEstimator : public HeightEstimatorBase
+class StatMeanEstimator : public HeightEstimatorBase
 {
 public:
-  SimpleMeanEstimator() = default;
-  virtual ~SimpleMeanEstimator() = default;
+  StatMeanEstimator() = default;
+  virtual ~StatMeanEstimator() = default;
 
   void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud) override;
   void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud) override;

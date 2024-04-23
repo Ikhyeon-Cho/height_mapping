@@ -1,5 +1,5 @@
 /*
- * SimpleMeanEstimator.cpp
+ * StatMeanEstimator.cpp
  *
  *  Created on: Apr 2, 2024
  *      Author: Ikhyeon Cho
@@ -7,11 +7,11 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_map_core/height_estimators/SimpleMeanEstimator.h"
+#include "height_map_core/height_estimators/StatMeanEstimator.h"
 
 namespace height_map
 {
-void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud)
+void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud)
 {
   if (hasEmptyCloud(cloud))
     return;
@@ -54,7 +54,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
   }
 }
 
-void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud)
+void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud)
 {
   if (hasEmptyCloud(cloud))
     return;
@@ -103,7 +103,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
   }
 }
 
-void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud)
+void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud)
 {
   if (hasEmptyCloud(cloud))
     return;
@@ -117,6 +117,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
   map.addLayer("r");
   map.addLayer("g");
   map.addLayer("b");
+  map.addLayer("color");
   map.addLayer("n_measured", 0.0);
 
   auto& height_matrix = map.getHeightMatrix();
@@ -126,6 +127,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
   auto& red_matrix = map["r"];
   auto& green_matrix = map["g"];
   auto& blue_matrix = map["b"];
+  auto& color_matrix = map["color"];
 
   grid_map::Index cell_index;
   grid_map::Position cell_position;
@@ -143,6 +145,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
     auto& red = red_matrix(cell_index(0), cell_index(1));
     auto& green = green_matrix(cell_index(0), cell_index(1));
     auto& blue = blue_matrix(cell_index(0), cell_index(1));
+    auto& color = color_matrix(cell_index(0), cell_index(1));
 
     // Initialize the height and variance if it is NaN
     if (map.isEmptyAt(cell_index))
@@ -154,6 +157,8 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
       red = point.r;
       green = point.g;
       blue = point.b;
+      grid_map::colorVectorToValue(point.getRGBVector3i(), color);
+
       continue;
     }
     statisticalMeanUpdate(height, variance, n_measured, point.z);
@@ -161,6 +166,7 @@ void SimpleMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointClo
     red = point.r;
     green = point.g;
     blue = point.b;
+    grid_map::colorVectorToValue(point.getRGBVector3i(), color);
   }
 }
 

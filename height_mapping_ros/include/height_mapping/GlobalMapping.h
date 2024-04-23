@@ -76,7 +76,7 @@ private:
   double map_length_y_{ pnh_.param<double>("mapLengthYGlobal", 400) };
 
   // Height Estimator Parameters
-  std::string height_estimator_type_{ pnh_.param<std::string>("heightEstimatorType", "SimpleMean") };
+  std::string height_estimator_type_{ pnh_.param<std::string>("heightEstimatorType", "StatMean") };
 
   // Map saver parameters
   std::string file_save_path_{ pnh_.param<std::string>("mapSaveDir", "/home/isr/Downloads") };

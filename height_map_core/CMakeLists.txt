@@ -31,7 +31,7 @@ add_library(${PROJECT_NAME}
   src/HeightMap.cpp
   src/height_estimators/KalmanEstimator.cpp
   src/height_estimators/MovingAverageEstimator.cpp
-  src/height_estimators/SimpleMeanEstimator.cpp
+  src/height_estimators/StatMeanEstimator.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

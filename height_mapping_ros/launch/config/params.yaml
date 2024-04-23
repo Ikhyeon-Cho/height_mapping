@@ -1,30 +1,28 @@
 height_mapping:
-  # Topics
-  pointCloudTopic: "/velodyne_tilted/velodyne_points" # See launch file argument
-  heightMapTopic: &grid_map_topic "/height_mapping/elevation_grid"
-  heightMapCloudTopic: &pointcloud_map_topic "/height_mapping/elevation_cloud"
-  mapRegionTopic: &map_region_topic "/height_mapping/map_region"
-  publishDebugTopics: true
-
-  # Frame Ids
+  lidarCloudTopic: "/velodyne/points"
+  rgbCloudTopic: "/camera/depth/color/points"
   baselinkFrame: "base_link"
+  odometryFrame: "odom"
   mapFrame: "map"
+  debugMode: true
 
-  # Pointcloud Filter
-  minHeightThreshold: -0.2
-  maxHeightThreshold: 1.5
+  # Pointcloud Preprocessing
+  minHeightThreshold: -0.05 # indoor: -0.05, outdoor: -0.2
+  maxHeightThreshold: 0.5
   minRangeThreshold: 0.3
   maxRangeThreshold: 10.0
+  minDepthThreshold: 1.0
+  maxDepthThreshold: 5.0
 
   # Height Map
-  gridResolution: 0.1
+  gridResolution: 0.05
   mapLengthX: 15.0
   mapLengthY: 15.0
-  heightEstimatorType: "SimpleMean" # "SimpleMean", "KalmanFilter", "MovingAverage"
+  heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
 
   # Process
   poseUpdateRate: 10
-  mapVisualizationRate: 10
+  mapPublishRate: 10
 
 global_mapping:
   # Topics
@@ -35,26 +33,10 @@ global_mapping:
   gridResolution: 0.1
   mapLengthXGlobal: 600
   mapLengthYGlobal: 600
-  heightEstimatorType: "SimpleMean" # "SimpleMean", "MovingAverage", "KalmanFilter"
+  heightEstimatorType: "StatMean" # "StatMean", "MovingAverage", "KalmanFilter"
 
   # Node settings
   globalMapVisualizationRate: 10.0
 
   # Map saver parameters
   mapSaveDir: "$(find height_mapping)/map_image"
-
-height_mapping_visualization:
-  grid_map_topic: *grid_map_topic
-  grid_map_visualizations:
-    # Point cloud
-    - name: *pointcloud_map_topic
-      type: point_cloud
-      params:
-        layer: elevation
-    # Map region (green)
-    - name: *map_region_topic
-      type: map_region
-      params:
-        # color: 0xFF0000
-        color: 0x00FF00
-        line_width: 0.1

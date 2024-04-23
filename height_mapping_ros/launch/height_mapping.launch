@@ -1,5 +1,5 @@
 <launch>
-  <arg name="input_cloud" default="/velodyne_tilted/velodyne_points" />
+  <!-- <arg name="input_cloud" default="/velodyne_tilted/velodyne_points" /> -->
 
   <!-- Assign Parameters to Server -->
   <rosparam file="$(find height_mapping)/launch/config/params.yaml" command="load"
@@ -7,11 +7,12 @@
 
   <!-- Height Mapping -->
   <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
-    <param name="pointCloudTopic" value="$(arg input_cloud)" />
+    <!-- <param name="pointCloudTopic" value="$(arg input_cloud)" /> -->
   </node>
 
-  <node pkg="grid_map_visualization" type="grid_map_visualization"
-    name="height_mapping_visualization" output="screen" />
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="height_mapping_visualization" output="screen">
+    <rosparam file="$(find height_mapping)/launch/config/visualization.yaml" />
+  </node>
 
 
 </launch>

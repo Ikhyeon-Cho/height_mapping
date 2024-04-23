@@ -24,15 +24,15 @@ GlobalMapping::GlobalMapping()
     height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
     ROS_INFO("[GlobalMapping] Height estimator: MovingAverageFilter");
   }
-  else if (height_estimator_type_ == "SimpleMean")
+  else if (height_estimator_type_ == "StatMean")
   {
-    height_estimator_ = std::make_unique<height_map::SimpleMeanEstimator>();
-    ROS_INFO("[GlobalMapping] Height estimator: SimpleMeanFilter");
+    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+    ROS_INFO("[GlobalMapping] Height estimator: StatMeanFilter");
   }
   else
   {
-    ROS_WARN("[GlobalMapping] Invalid height estimator type. Set Default: SimpleMean");
-    height_estimator_ = std::make_unique<height_map::SimpleMeanEstimator>();
+    ROS_WARN("[GlobalMapping] Invalid height estimator type. Set Default: StatMean");
+    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
 
   heightmap_cloud_ = boost::make_shared<pcl::PointCloud<PointT>>();
