@@ -20,14 +20,17 @@ HeightMapping::HeightMapping()
   // - StatMean (by default)
   if (height_estimator_type_ == "KalmanFilter")
   {
+    std::cout << "\033[1;33m[HeightMapping]: Height estimator type ---> KalmanFilter \033[0m\n";
     height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
   }
   else if (height_estimator_type_ == "MovingAverage")
   {
+    std::cout << "\033[1;33m[HeightMapping]: Height estimator type ---> MovingAverage \033[0m\n";
     height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
   }
   else if (height_estimator_type_ == "StatMean")
   {
+    std::cout << "\033[1;33m[HeightMapping]: Height estimator type ---> StatisticalMeanEstimator \033[0m\n";
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
   else
@@ -42,7 +45,7 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
   if (!lasercloud_received_)
   {
     lasercloud_received_ = true;
-    std::cout << "\033[1;32m[HeightMapping]: Laser Cloud Received! Use LiDAR sensor for height mapping... \033[0m\n";
+    std::cout << "\033[32m[HeightMapping]: Laser Cloud Received! Use LiDAR pointcloud for height mapping... \033[0m\n";
     robot_pose_update_timer_.start();
   }
 
@@ -81,7 +84,10 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
   // Register laser cloud to the map
   auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
+  {
+    std::cout << "\033[33m[HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
     return;
+  }
   auto lasercloud_registered = utils::pcl::transformPointcloud<Laser>(lasercloud_filtered, base_to_map);
 
   end = std::chrono::high_resolution_clock::now();
@@ -135,7 +141,7 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
   if (!rgbcloud_received_)
   {
     rgbcloud_received_ = true;
-    std::cout << "\033[1;32m[HeightMapping]: RGB Cloud Received! Use RGB-D sensor for height mapping... \033[0m\n";
+    std::cout << "\033[32m[HeightMapping]: RGB Cloud Received! Use RGB-D pointcloud for height mapping... \033[0m\n";
     robot_pose_update_timer_.start();
   }
 
@@ -173,7 +179,10 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
   // Register rgb cloud to the map
   auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
+  {
+    std::cout << "\033[33m[HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
     return;
+  }
   auto rgbcloud_registered = utils::pcl::transformPointcloud<Color>(rgbcloud_filtered, base_to_map);
 
   end = std::chrono::high_resolution_clock::now();

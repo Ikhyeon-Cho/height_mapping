@@ -11,13 +11,20 @@
 #include <chrono>
 
 template <typename PointT>
-SensorProcessor<PointT>::SensorProcessor()
+SensorProcessor<PointT>::SensorProcessor() : is_activated_{ false }
 {
 }
 
 template <typename PointT>
 void SensorProcessor<PointT>::cloudCallback1(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
+  if (!is_activated_)
+  {
+    is_activated_ = true;
+    publish_cloud_timer_.start();
+    std::cout << "\033[32m[SensorProcessor]: Data received! Start processing...\033[0m" << std::endl;
+  }
+
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::fromROSMsg(*msg, *cloud);

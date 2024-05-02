@@ -84,13 +84,16 @@ private:
   ros::Subscriber sub_cloud_3_{ nh_priv_.subscribe(inputcloud_topic_3_, 1, &SensorProcessor::cloudCallback3, this) };
   ros::Publisher pub_cloud_{ nh_priv_.advertise<sensor_msgs::PointCloud2>(processed_cloud_topic_, 1) };
 
-  ros::Timer publish_cloud_timer_{ nh_priv_.createTimer(cloud_pub_rate_, &SensorProcessor::publishCloud, this) };
+  ros::Timer publish_cloud_timer_{ nh_priv_.createTimer(cloud_pub_rate_, &SensorProcessor::publishCloud, this, false,
+                                                        false) };  // oneshot: false, autostart: false
 
 private:
   typename pcl::PointCloud<PointT>::Ptr inputcloud1_{ boost::make_shared<pcl::PointCloud<PointT>>() };
   typename pcl::PointCloud<PointT>::Ptr inputcloud2_{ boost::make_shared<pcl::PointCloud<PointT>>() };
   typename pcl::PointCloud<PointT>::Ptr inputcloud3_{ boost::make_shared<pcl::PointCloud<PointT>>() };
   typename pcl::PointCloud<PointT>::Ptr cloud_processed_{ boost::make_shared<pcl::PointCloud<PointT>>() };
+
+  bool is_activated_;
 };
 
 #endif /* SENSOR_PROCESSOR_H */

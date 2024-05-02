@@ -23,7 +23,7 @@ int main(int argc, char** argv)
 
   if (point_type_ == "color")
   {
-    std::cout << "\033[32m[SensorProcessor]: RGB Point Cloud Processing Started...\033[0m" << std::endl;
+    std::cout << "\033[1;32m[SensorProcessor]: Waiting for RGB pointcloud Processing...\033[0m" << std::endl;
 
     nh.setParam("processedCloudTopic", "color/points");
 
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
   }
   else if (point_type_ == "laser")
   {
-    std::cout << "\033[32m[SensorProcessor]: Laser Point Cloud Processing Started...\033[0m" << std::endl;
+    std::cout << "\033[1;32m[SensorProcessor]: Waiting for Laser pointcloud Processing...\033[0m" << std::endl;
 
     nh.setParam("processedCloudTopic", "laser/points");
 
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   }
   else
   {
-    std::cout << "\033[33m[SensorProcessor]: Invalid Point Type!! Supported Point Types: color, laser\033[0m"
+    std::cout << "\033[33m[SensorProcessor]: Invalid Point Type!! Supported point types: color, laser\033[0m"
               << std::endl;
     return -1;
   }

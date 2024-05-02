@@ -36,8 +36,8 @@ public:
     }
     catch (const tf2::TransformException& ex)
     {
-      ROS_ERROR_STREAM_THROTTLE(1, "Failed to look up transform from " << source_frame << " to " << target_frame << ": "
-                                                                       << ex.what());  // 0.2us
+      ROS_WARN_STREAM_THROTTLE(1, "Failed to look up transform from " << source_frame << " to "
+                                                                       << target_frame);  // 0.2us
       return { false, {} };
     }
   }
@@ -107,5 +107,5 @@ private:
   tf2_ros::StaticTransformBroadcaster static_tf_broadcaster_{};
 };
 // class TransformHandler
-}  // namespace ros_utils
+}  // namespace utils
 #endif  // ROS_UTILS_TRANSFORM_HANDLER_H
