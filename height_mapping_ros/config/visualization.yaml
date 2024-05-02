@@ -7,5 +7,6 @@ grid_map_visualizations:
   - name: "/height_mapping/map_region"
     type: map_region
     params:
-      color: 0x000000
+      # white
+      color: 0xFFFFFF
       line_width: 0.01
