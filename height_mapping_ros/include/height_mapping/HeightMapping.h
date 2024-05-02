@@ -25,6 +25,7 @@
 #include <height_map_core/height_map_core.h>
 #include <height_map_msgs/HeightMapMsgs.h>
 #include <height_map_pcl/cloud_preprocessors.h>
+#include <height_map_pcl/PCLProcessor.h>
 
 #include <jsk_rviz_plugins/OverlayText.h>
 
@@ -36,21 +37,21 @@ class HeightMapping
 public:
   HeightMapping();
 
-  void updateFromCloudLaser(const sensor_msgs::PointCloud2ConstPtr& msg);
+  void updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr& msg);
 
-  void updateFromCloudRGB(const sensor_msgs::PointCloud2ConstPtr& msg);
+  void updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& msg);
 
   void updatePosition(const ros::TimerEvent& event);
 
-  void publishGridmap(const ros::TimerEvent& event);
+  void publishHeightmap(const ros::TimerEvent& event);
 
 private:
   ros::NodeHandle nh_priv{ "~" };
   utils::TransformHandler tf_tree_;
 
   // Topics
-  std::string lidarcloud_topic_{ nh_priv.param<std::string>("lidarCloudTopic", "/points") };
-  std::string rgbcloud_topic_{ nh_priv.param<std::string>("rgbCloudTopic", "/camera/depth/color/points") };
+  std::string lidarcloud_topic_{ nh_priv.param<std::string>("lidarCloudTopic", "/sensor_processor/laser/points") };
+  std::string rgbcloud_topic_{ nh_priv.param<std::string>("rgbCloudTopic", "/sensor_processor/color/points") };
 
   // Frame Ids
   std::string baselink_frame{ nh_priv.param<std::string>("baselinkFrame", "base_link") };
@@ -79,8 +80,8 @@ private:
   bool debug_{ nh_priv.param<bool>("debugMode", false) };
 
   // ROS
-  ros::Subscriber sub_lidar_{ nh_priv.subscribe(lidarcloud_topic_, 1, &HeightMapping::updateFromCloudLaser, this) };
-  ros::Subscriber sub_rgbd_{ nh_priv.subscribe(rgbcloud_topic_, 1, &HeightMapping::updateFromCloudRGB, this) };
+  ros::Subscriber sub_lidar_{ nh_priv.subscribe(lidarcloud_topic_, 1, &HeightMapping::updateFromLaserCloud, this) };
+  ros::Subscriber sub_rgbd_{ nh_priv.subscribe(rgbcloud_topic_, 1, &HeightMapping::updateFromRGBCloud, this) };
   ros::Publisher pub_laser_downsampled_{ nh_priv.advertise<sensor_msgs::PointCloud2>("laser_downsampled", 1) };
   ros::Publisher pub_rgbd_downsampled_{ nh_priv.advertise<sensor_msgs::PointCloud2>("rgbd_downsampled", 1) };
   ros::Publisher pub_heightmap_{ nh_priv.advertise<grid_map_msgs::GridMap>("gridmap", 1) };
@@ -91,7 +92,7 @@ private:
 
   ros::Timer robot_pose_update_timer_{ nh_priv.createTimer(pose_update_rate_, &HeightMapping::updatePosition, this,
                                                            false, false) };  // oneshot = false, autostart = false
-  ros::Timer pub_heightmap_timer_{ nh_priv.createTimer(heightmap_pub_rate_, &HeightMapping::publishGridmap, this) };
+  ros::Timer pub_heightmap_timer_{ nh_priv.createTimer(heightmap_pub_rate_, &HeightMapping::publishHeightmap, this) };
 
 private:
   grid_map::HeightMap map_{ map_length_x_, map_length_y_, grid_resolution_ };
@@ -100,8 +101,10 @@ private:
   // Cloud processor
   height_map::IntensityCloudProcessor lasercloud_preprocessor_;  // For PointXYZI type
   height_map::RGBCloudProcessor rgbcloud_preprocessor_;          // For PointXYZRGB type
+  height_map::pclProcessor test_processor_;
 
   bool lasercloud_received_{ false };
+  bool rgbcloud_received_{ false };
 };
 
 #endif  // HEIGHT_MAPPING_H

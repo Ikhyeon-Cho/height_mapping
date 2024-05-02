@@ -99,7 +99,7 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
     }
 
     statisticalMeanUpdate(height, variance, n_measured, point.z);
-    intensity = point.intensity;
+    statisticalMeanUpdate(intensity, variance, n_measured, point.intensity);
   }
 }
 
@@ -124,9 +124,9 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
   auto& variance_matrix = map.getVarianceMatrix();
   auto& n_measured_matrix = map["n_measured"];
 
-  auto& red_matrix = map["r"];
-  auto& green_matrix = map["g"];
-  auto& blue_matrix = map["b"];
+  auto& r_matrix = map["r"];
+  auto& g_matrix = map["g"];
+  auto& b_matrix = map["b"];
   auto& color_matrix = map["color"];
 
   grid_map::Index cell_index;
@@ -142,9 +142,9 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
     auto& variance = variance_matrix(cell_index(0), cell_index(1));
     auto& n_measured = n_measured_matrix(cell_index(0), cell_index(1));
 
-    auto& red = red_matrix(cell_index(0), cell_index(1));
-    auto& green = green_matrix(cell_index(0), cell_index(1));
-    auto& blue = blue_matrix(cell_index(0), cell_index(1));
+    auto& r = r_matrix(cell_index(0), cell_index(1));
+    auto& g = g_matrix(cell_index(0), cell_index(1));
+    auto& b = b_matrix(cell_index(0), cell_index(1));
     auto& color = color_matrix(cell_index(0), cell_index(1));
 
     // Initialize the height and variance if it is NaN
@@ -154,19 +154,18 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
       variance = 0.0f;
       n_measured = 1.0f;
 
-      red = point.r;
-      green = point.g;
-      blue = point.b;
+      r = point.r;
+      g = point.g;
+      b = point.b;
       grid_map::colorVectorToValue(point.getRGBVector3i(), color);
 
       continue;
     }
     statisticalMeanUpdate(height, variance, n_measured, point.z);
-
-    red = point.r;
-    green = point.g;
-    blue = point.b;
-    grid_map::colorVectorToValue(point.getRGBVector3i(), color);
+    statisticalMeanUpdate(r, variance, n_measured, point.r);
+    statisticalMeanUpdate(g, variance, n_measured, point.g);
+    statisticalMeanUpdate(b, variance, n_measured, point.b);
+    grid_map::colorVectorToValue(Eigen::Vector3i(r, g, b), color);
   }
 }
 

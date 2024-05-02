@@ -82,7 +82,7 @@ void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::Point
       continue;
     }
     ExponentialWeightedMovingAverageUpdate(height, point.z);
-    intensity = point.intensity;
+    ExponentialWeightedMovingAverageUpdate(intensity, point.intensity);
   }
 }
 
@@ -100,11 +100,13 @@ void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::Point
   map.addLayer("r");
   map.addLayer("g");
   map.addLayer("b");
+  map.addLayer("color");
 
   auto& height_matrix = map.getHeightMatrix();
   auto& red_matrix = map["r"];
   auto& green_matrix = map["g"];
   auto& blue_matrix = map["b"];
+  auto& color_matrix = map["color"];
 
   grid_map::Index cell_index;
   grid_map::Position cell_position;
@@ -119,6 +121,7 @@ void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::Point
     auto& red = red_matrix(cell_index(0), cell_index(1));
     auto& green = green_matrix(cell_index(0), cell_index(1));
     auto& blue = blue_matrix(cell_index(0), cell_index(1));
+    auto& color = color_matrix(cell_index(0), cell_index(1));
 
     // Initialize the height and variance if it is NaN
     if (map.isEmptyAt(cell_index))
@@ -127,13 +130,16 @@ void MovingAverageEstimator::estimate(grid_map::HeightMap& map, const pcl::Point
       red = point.r;
       green = point.g;
       blue = point.b;
+      grid_map::colorVectorToValue(point.getRGBVector3i(), color);
+
       continue;
     }
 
     ExponentialWeightedMovingAverageUpdate(height, point.z);
-    red = point.r;
-    green = point.g;
-    blue = point.b;
+    ExponentialWeightedMovingAverageUpdate(red, point.r);
+    ExponentialWeightedMovingAverageUpdate(green, point.g);
+    ExponentialWeightedMovingAverageUpdate(blue, point.b);
+    grid_map::colorVectorToValue(Eigen::Vector3i(red, green, blue), color);
   }
 }
 

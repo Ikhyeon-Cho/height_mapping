@@ -12,10 +12,12 @@
 
 HeightMapping::HeightMapping()
 {
-  // Set heightmap frame_id
   map_.setFrameId(map_frame);
 
-  // Set height_estimator
+  // Set height_estimator:
+  // - Kalman Filter
+  // - Moving Average
+  // - StatMean (by default)
   if (height_estimator_type_ == "KalmanFilter")
   {
     height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
@@ -30,101 +32,143 @@ HeightMapping::HeightMapping()
   }
   else
   {
-    ROS_WARN("[HeightMapping] Invalid height estimator type. Set Default: StatMean");
+    ROS_WARN("[HeightMapping] Invalid height estimator type. Set Default: StatMeanEstimator");
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
 }
 
-void HeightMapping::updateFromCloudLaser(const sensor_msgs::PointCloud2ConstPtr& msg)
+void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-  if (lasercloud_received_ == false)
+  if (!lasercloud_received_)
   {
-    robot_pose_update_timer_.start();
-
-    ROS_INFO("[HeightMapping] Laser Cloud Received! Use laser cloud for height mapping...");
     lasercloud_received_ = true;
+    std::cout << "\033[1;32m[HeightMapping]: Laser Cloud Received! Use LiDAR sensor for height mapping... \033[0m\n";
+    robot_pose_update_timer_.start();
   }
 
+  // Timer for benchmarking:
+  auto start_begin = std::chrono::high_resolution_clock::now();
   auto start = std::chrono::high_resolution_clock::now();
 
-  // Convert msg to pcl::PointCloud<pcl::PointXYZI>
+  // Msg conversion
   auto lasercloud_raw = boost::make_shared<pcl::PointCloud<Laser>>();
   pcl::fromROSMsg(*msg, *lasercloud_raw);  // !Note: moveFromROSMsg is faster (100 ~ 200 us) than fromROSMsg
 
-  // Transform pointcloud to base_link is needed for range-based filtering
-  auto sensor_frame = msg->header.frame_id;
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration_conversion = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
+
+  // Transform pointcloud to base_link
+  // Required for height filtering: If already in base_link, then will return the same pointcloud
+  const auto& sensor_frame = msg->header.frame_id;
   auto [get_transform_s2b, sensor_to_baselink] = tf_tree_.getTransform(sensor_frame, baselink_frame);
   if (!get_transform_s2b)
     return;
   auto lasercloud_baselink = utils::pcl::transformPointcloud<Laser>(lasercloud_raw, sensor_to_baselink);
 
-  // Filter pointcloud by range (in x-y) and height (in z)
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_transform = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
+
+  // Filter pointcloud by height (z-axis)
   auto lasercloud_filtered =
-      utils::pcl::filterPointcloudByRange2D<Laser>(lasercloud_baselink, range_min_thrsh_, range_max_thrsh_);
-  lasercloud_filtered =
-      utils::pcl::filterPointcloudByField<Laser>(lasercloud_filtered, "z", height_min_thrsh_, height_max_thrsh_);
+      utils::pcl::filterPointcloudByField<Laser>(lasercloud_baselink, "z", height_min_thrsh_, height_max_thrsh_);
+
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_filter = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
 
   // Register laser cloud to the map
   auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
     return;
-  auto lasercloud_to_be_registered = utils::pcl::transformPointcloud<Laser>(lasercloud_filtered, base_to_map);
+  auto lasercloud_registered = utils::pcl::transformPointcloud<Laser>(lasercloud_filtered, base_to_map);
 
-  // Cloud Downsampling by grid resolution-> each grid cell has only one point, with max height
-  auto [get_cloud_downsampled, lasercloud_downsampled] =
-      lasercloud_preprocessor_.gridDownsampling(*lasercloud_to_be_registered, map_);
-  if (!get_cloud_downsampled)
-    return;
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_registration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
 
-  auto [get_cloud_consistent, lasercloud_consistent] =
-      lasercloud_preprocessor_.removeInconsistentPoints(*lasercloud_downsampled, map_);
-  if (!get_cloud_consistent)
-    return;
+  // Downsampling by height map resolution-> each grid cell has only one point, with max height
+  auto lasercloud_registered_downsampled =
+      height_map::pclProcessor::maxZGridDownsample<Laser>(lasercloud_registered, grid_resolution_);
+
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_downsampling = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
 
   // Estimate height of each grid cell
-  height_estimator_->estimate(map_, *lasercloud_consistent);
+  height_estimator_->estimate(map_, *lasercloud_registered_downsampled);
+
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_estimation = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
   // For Debug:
-  // Publish preprocessed pointcloud
-  // Publish processing time
+  // - Publish preprocessed pointcloud
+  // - Publish processing time
   if (debug_)
   {
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_begin);
+
+    // Publish preprocessed pointcloud
     sensor_msgs::PointCloud2 msg_pc;
-    pcl::toROSMsg(*lasercloud_consistent, msg_pc);
+    pcl::toROSMsg(*lasercloud_registered_downsampled, msg_pc);
     pub_laser_downsampled_.publish(msg_pc);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    // Publish processing time
     jsk_rviz_plugins::OverlayText overlay_text;
-    overlay_text.text = "Laser Processing time: " + std::to_string(duration.count()) + " ms";
+    overlay_text.height = 300;
+    overlay_text.width = 300;
+    overlay_text.text = "Laser Processing time: " + std::to_string(duration.count()) + " us" +
+                        "\nConversion: " + std::to_string(duration_conversion.count()) + " us" +
+                        "\nTransform: " + std::to_string(duration_transform.count()) + " us" +
+                        "\nFilter: " + std::to_string(duration_filter.count()) + " us" +
+                        "\nRegistration: " + std::to_string(duration_registration.count()) + " us" +
+                        "\nDownsampling: " + std::to_string(duration_downsampling.count()) + " us" +
+                        "\nEstimation: " + std::to_string(duration_estimation.count()) + " us";
     pub_laser_processing_time_.publish(overlay_text);
   }
 }
 
-void HeightMapping::updateFromCloudRGB(const sensor_msgs::PointCloud2ConstPtr& msg)
+void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-  robot_pose_update_timer_.start();
+  if (!rgbcloud_received_)
+  {
+    rgbcloud_received_ = true;
+    std::cout << "\033[1;32m[HeightMapping]: RGB Cloud Received! Use RGB-D sensor for height mapping... \033[0m\n";
+    robot_pose_update_timer_.start();
+  }
 
+  // Timer for benchmarking:
+  auto start_begin = std::chrono::high_resolution_clock::now();
   auto start = std::chrono::high_resolution_clock::now();
 
-  // Convert msg to pcl::PointCloud<pcl::PointXYZRGB>
+  // Msg conversion
   auto rgbcloud_raw = boost::make_shared<pcl::PointCloud<Color>>();
   pcl::fromROSMsg(*msg, *rgbcloud_raw);
 
-  auto rgbcloud_downsampled = utils::pcl::filterPointcloudByVoxel<Color>(rgbcloud_raw, grid_resolution_ * 0.5);
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration_conversion = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
 
-  // Transform pointcloud to base_link is needed for range-based filtering
-  auto sensor_frame = msg->header.frame_id;
+  // Transform pointcloud to base_link
+  const auto& sensor_frame = msg->header.frame_id;
   auto [get_transform_s2b, sensor_to_baselink] = tf_tree_.getTransform(sensor_frame, baselink_frame);
   if (!get_transform_s2b)
     return;
-  auto rgbcloud_baselink = utils::pcl::transformPointcloud<Color>(rgbcloud_downsampled, sensor_to_baselink);
+  auto rgbcloud_baselink = utils::pcl::transformPointcloud<Color>(rgbcloud_raw, sensor_to_baselink);
 
-  // Filter pointcloud by range (in x-y) and depth (in z)
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_transform = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
+
+  // Filter pointcloud by height (z-axis)
   auto rgbcloud_filtered =
-      utils::pcl::filterPointcloudByRange2D<Color>(rgbcloud_baselink, depth_min_thrsh_, depth_max_thrsh_);
-  rgbcloud_filtered =
-      utils::pcl::filterPointcloudByField<Color>(rgbcloud_filtered, "z", height_min_thrsh_, height_max_thrsh_);
+      utils::pcl::filterPointcloudByField<Color>(rgbcloud_baselink, "z", height_min_thrsh_, height_max_thrsh_);
+
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_filter = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
 
   // Register rgb cloud to the map
   auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
@@ -132,29 +176,55 @@ void HeightMapping::updateFromCloudRGB(const sensor_msgs::PointCloud2ConstPtr& m
     return;
   auto rgbcloud_registered = utils::pcl::transformPointcloud<Color>(rgbcloud_filtered, base_to_map);
 
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_registration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
+
+  // Downsampling by height map resolution-> each grid cell has only one point, with max height
+  auto rgbcloud_registered_downsampled =
+      height_map::pclProcessor::maxZGridDownsample<Color>(rgbcloud_registered, grid_resolution_);
+
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_downsampling = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  start = end;
+
   // Estimate height of each grid cell
-  height_estimator_->estimate(map_, *rgbcloud_registered);
+  height_estimator_->estimate(map_, *rgbcloud_registered_downsampled);
+
+  end = std::chrono::high_resolution_clock::now();
+  auto duration_estimation = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
   // For Debug:
-  // Publish preprocessed pointcloud
-  // Publish processing time
+  // - Publish preprocessed pointcloud
+  // - Publish processing time
   if (debug_)
   {
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start_begin);
+
+    // Publish preprocessed pointcloud
     sensor_msgs::PointCloud2 msg_pc;
-    pcl::toROSMsg(*rgbcloud_registered, msg_pc);
+    pcl::toROSMsg(*rgbcloud_registered_downsampled, msg_pc);
     pub_rgbd_downsampled_.publish(msg_pc);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    // Publish processing time
     jsk_rviz_plugins::OverlayText overlay_text;
-    overlay_text.text = "RGBD Processing time: " + std::to_string(duration.count()) + " ms";
+    overlay_text.height = 300;
+    overlay_text.width = 300;
+    overlay_text.text = "RGBD Processing time: " + std::to_string(duration.count()) + " ms" +
+                        "\nConversion: " + std::to_string(duration_conversion.count()) + " us" +
+                        "\nTransform: " + std::to_string(duration_transform.count()) + " us" +
+                        "\nFilter: " + std::to_string(duration_filter.count()) + " us" +
+                        "\nRegistration: " + std::to_string(duration_registration.count()) + " us" +
+                        "\nDownsampling: " + std::to_string(duration_downsampling.count()) + " us" +
+                        "\nEstimation: " + std::to_string(duration_estimation.count()) + " us";
     pub_rgbd_processing_time_.publish(overlay_text);
   }
 }
 
 void HeightMapping::updatePosition(const ros::TimerEvent& event)
 {
-  // Get Transform from base_link to map (localization pose)
+  // Get Transform from base_link to map (tf provided by 3d pose estimator. ex: VINS, LOAM, etc.)
   auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
     return;
@@ -162,9 +232,8 @@ void HeightMapping::updatePosition(const ros::TimerEvent& event)
   map_.move(grid_map::Position(base_to_map.transform.translation.x, base_to_map.transform.translation.y));
 }
 
-void HeightMapping::publishGridmap(const ros::TimerEvent& event)
+void HeightMapping::publishHeightmap(const ros::TimerEvent& event)
 {
-  // Height Map Visualization
   grid_map_msgs::GridMap msg_heightmap;
   grid_map::GridMapRosConverter::toMessage(map_, msg_heightmap);
   pub_heightmap_.publish(msg_heightmap);

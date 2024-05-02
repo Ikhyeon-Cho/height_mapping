@@ -36,6 +36,17 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+# Sensor processor node
+add_executable(sensor_processor_node
+  src/sensor_processing/sensor_processor_node.cpp
+  src/sensor_processing/SensorProcessor.cpp
+)
+target_link_libraries(sensor_processor_node
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+# Height mapping node
 add_executable(height_mapping_node
   src/height_mapping/height_mapping_node.cpp
   src/height_mapping/HeightMapping.cpp
@@ -45,6 +56,7 @@ target_link_libraries(height_mapping_node
   ${catkin_LIBRARIES}
 )
 
+# Height map visualziation node
 add_executable(heightmap_visualization_node 
   src/height_map_visualization/heightmap_visualization_node.cpp
   src/height_map_visualization/HeightMapVisualization.cpp
@@ -54,6 +66,7 @@ target_link_libraries(heightmap_visualization_node
   ${catkin_LIBRARIES}
 )
 
+# Global mapping node
 add_executable(global_mapping_node 
   src/global_mapping/global_mapping_node.cpp
   src/global_mapping/GlobalMapping.cpp
@@ -63,12 +76,3 @@ target_link_libraries(global_mapping_node
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
 )
-
-# add_executable(heightmap_saver_node src/heightmap_saver_node.cpp
-#   src/HeightMapSaver.cpp
-# )
-# target_link_libraries(heightmap_saver_node
-#   ${PCL_LIBRARIES}
-#   ${catkin_LIBRARIES}
-#   ${YAML_CPP_LIBRARIES}
-# )

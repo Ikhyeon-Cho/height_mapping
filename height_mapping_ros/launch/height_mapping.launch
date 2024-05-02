@@ -1,17 +1,18 @@
 <launch>
-  <!-- <arg name="input_cloud" default="/velodyne_tilted/velodyne_points" /> -->
 
-  <!-- Assign Parameters to Server -->
-  <rosparam file="$(find height_mapping)/launch/config/params.yaml" command="load"
+  <!-- Assign Parameters to ROS Core -->
+  <rosparam file="$(find height_mapping)/config/params.yaml" command="load"
     subst_value="true" />
+
+  <!-- Sensor pre-processing -->
+  <include file="$(find height_mapping)/launch/include/sensor_preprocess.launch.xml" />
 
   <!-- Height Mapping -->
   <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
-    <!-- <param name="pointCloudTopic" value="$(arg input_cloud)" /> -->
   </node>
 
   <node pkg="grid_map_visualization" type="grid_map_visualization" name="height_mapping_visualization" output="screen">
-    <rosparam file="$(find height_mapping)/launch/config/visualization.yaml" />
+    <rosparam file="$(find height_mapping)/config/visualization.yaml" />
   </node>
 
 

@@ -25,7 +25,6 @@ public:
   void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud) override;
 
 private:
-
   // Update statistics: mu, sigma2, n
   // recursive update of mean and variance:
   // https://math.stackexchange.com/questions/374881/recursive-formula-for-variance
