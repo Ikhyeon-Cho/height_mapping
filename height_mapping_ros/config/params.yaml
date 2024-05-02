@@ -1,0 +1,35 @@
+sensor_processor:
+  pointType: "color" # color: rgb cloud, laser: intensity cloud
+  inputCloudTopic1: "/zed2/pointcloud/points"
+  inputCloudTopic2: "/rs_camera_left/pointcloud/points"
+  inputCloudTopic3: "/rs_camera_right/pointcloud/points"
+  downsamplingResolution: 0.02 # [m/voxel]
+  minRangeThreshold: 0.3
+  maxRangeThreshold: 5.0
+
+  ### Uncomment the lines below if you want to use LiDAR sensor
+  # pointType: "laser" # color: rgb cloud, laser: intensity cloud
+  # inputCloudTopic1: "/velodyne/points"
+  # inputCloudTopic2: "/livox/points"
+  # inputCloudTopic3: "/ouster/points"
+  # downsamplingResolution: 0.00 # [m/voxel] # 0.00 for no downsampling
+  # minRangeThreshold: 0.3
+  # maxRangeThreshold: 10.0
+
+height_mapping:
+  baselinkFrame: "base_link"
+  odometryFrame: "odom"
+  mapFrame: "map"
+  debugMode: true
+
+  # Height Mapping
+  gridResolution: 0.04 # rgb-d: 0.04, lidar: 0.1 [m/grid]
+  mapLengthX: 10.0
+  mapLengthY: 10.0
+  heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
+  minHeightThreshold: -0.2 # indoor: -0.05, outdoor: -0.2 [meter]
+  maxHeightThreshold: 1.0
+
+  # Process
+  poseUpdateRate: 15
+  mapPublishRate: 15
