@@ -28,13 +28,16 @@ private:
   // Update statistics: mu, sigma2, n
   // recursive update of mean and variance:
   // https://math.stackexchange.com/questions/374881/recursive-formula-for-variance
-  void statisticalMeanUpdate(float& height, float& variance, float& n_measured, float point_height)
+  void statisticalMeanVarianceUpdate(float& height, float& variance, float n_measured, float point_height)
   {
     auto prev_height = height;
-    n_measured += 1;
     height += (point_height - height) / n_measured;
     variance += std::pow(prev_height, 2) - std::pow(height, 2) +
                 (std::pow(point_height, 2) - variance - std::pow(prev_height, 2)) / n_measured;
+  }
+  void statisticalMeanUpdate(float& attribute, float n_measured, float point_attribute)
+  {
+    attribute += (point_attribute - attribute) / n_measured;
   }
 };
 }  // namespace height_map

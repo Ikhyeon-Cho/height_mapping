@@ -50,7 +50,7 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
       continue;
     }
 
-    statisticalMeanUpdate(height, variance, n_measured, point.z);
+    statisticalMeanVarianceUpdate(height, variance, n_measured, point.z);
   }
 }
 
@@ -98,8 +98,8 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
       continue;
     }
 
-    statisticalMeanUpdate(height, variance, n_measured, point.z);
-    statisticalMeanUpdate(intensity, variance, n_measured, point.intensity);
+    statisticalMeanVarianceUpdate(height, variance, n_measured, point.z);
+    statisticalMeanVarianceUpdate(intensity, variance, n_measured, point.intensity);
   }
 }
 
@@ -161,10 +161,12 @@ void StatMeanEstimator::estimate(grid_map::HeightMap& map, const pcl::PointCloud
 
       continue;
     }
-    statisticalMeanUpdate(height, variance, n_measured, point.z);
-    statisticalMeanUpdate(r, variance, n_measured, point.r);
-    statisticalMeanUpdate(g, variance, n_measured, point.g);
-    statisticalMeanUpdate(b, variance, n_measured, point.b);
+
+    ++n_measured;
+    statisticalMeanVarianceUpdate(height, variance, n_measured, point.z);
+    statisticalMeanUpdate(r, n_measured, point.r);
+    statisticalMeanUpdate(g, n_measured, point.g);
+    statisticalMeanUpdate(b, n_measured, point.b);
     grid_map::colorVectorToValue(Eigen::Vector3i(r, g, b), color);
   }
 }
