@@ -11,8 +11,11 @@
 
 GlobalMapping::GlobalMapping()
 {
-  map_.setFrameId(map_frame_);
-  map_.setPosition(grid_map::Position(map_.getLength().x() / 2, map_.getLength().y() / 2));
+  globalmap_.setFrameId(map_frame_);
+  globalmap_.setPosition(grid_map::Position(globalmap_.getLength().x() / 2, globalmap_.getLength().y() / 2));
+
+  heightmap_cloud_ = boost::make_shared<pcl::PointCloud<PointT>>();
+  measured_indices_.reserve(globalmap_.getSize().prod());
 
   if (height_estimator_type_ == "KalmanFilter")
   {
@@ -34,19 +37,17 @@ GlobalMapping::GlobalMapping()
     ROS_WARN("[GlobalMapping] Invalid height estimator type. Set Default: StatMean");
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
-
-  heightmap_cloud_ = boost::make_shared<pcl::PointCloud<PointT>>();
 }
 
-void GlobalMapping::mapping(const sensor_msgs::PointCloud2ConstPtr& msg)
+void GlobalMapping::updateFromLocalMap(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
   // Convert msg to pcl::PointCloud
   pcl::fromROSMsg(*msg, *heightmap_cloud_);
 
-  updateMeasuredIndices(map_, *heightmap_cloud_);
+  addMeasuredGridIndices(globalmap_, *heightmap_cloud_);
 
-  // Update global map
-  height_estimator_->estimate(map_, *heightmap_cloud_);
+  // Update global map from local map
+  height_estimator_->estimate(globalmap_, *heightmap_cloud_);
 }
 
 void GlobalMapping::visualize(const ros::TimerEvent& event)
@@ -55,12 +56,13 @@ void GlobalMapping::visualize(const ros::TimerEvent& event)
 
   // Note: grid_map_msgs are not visualizable in large scale map -> use PointCloud2 instead
   sensor_msgs::PointCloud2 cloud_msg;
-  HeightMapConverter::toPointCloud2(map_, map_.getLayers(), measured_indices_, cloud_msg);
+  // HeightMapConverter::toPointCloud2(globalmap_, globalmap_.getLayers(), measured_indices_, cloud_msg);
+  toPointCloud2(globalmap_, globalmap_.getLayers(), measured_indices_, cloud_msg);
   pub_globalmap_.publish(cloud_msg);
 
   // Visualize map region
   visualization_msgs::Marker msg_map_region;
-  HeightMapMsgs::toMapRegion(map_, msg_map_region);
+  HeightMapMsgs::toMapRegion(globalmap_, msg_map_region);
   pub_map_region_.publish(msg_map_region);
 
   auto stop = std::chrono::high_resolution_clock::now();
@@ -68,7 +70,7 @@ void GlobalMapping::visualize(const ros::TimerEvent& event)
   ROS_INFO_THROTTLE(1.0, "Global map visualization takes: %ld milliseconds", duration.count());
 }
 
-void GlobalMapping::updateMeasuredIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud)
+void GlobalMapping::addMeasuredGridIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud)
 {
   // Save measured indices for efficient visualization
   grid_map::Index cell_index;
@@ -83,114 +85,13 @@ void GlobalMapping::updateMeasuredIndices(const grid_map::HeightMap& map, const 
     if (!map.isEmptyAt(cell_index))
       continue;
 
-    measured_indices_.push_back(cell_index);
+    measured_indices_.insert(cell_index);
   }
-}
-
-pcl::PointCloud<PointT>::Ptr GlobalMapping::toPointCloudMap(const grid_map::HeightMap& map)
-{
-  pcl::PointCloud<PointT>::Ptr map_cloud{ boost::make_shared<pcl::PointCloud<PointT>>() };
-  map_cloud->header.frame_id = map.getFrameId();
-
-  std::vector<grid_map::Index> measured_index_list;
-  const auto& height_matrix = map.getHeightMatrix();
-  for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator)
-  {
-    const size_t i = iterator.getLinearIndex();
-    const auto& is_valid = std::isfinite(height_matrix(i));
-    if (!is_valid)
-      continue;
-
-    measured_index_list.push_back(*iterator);
-  }
-
-  for (const auto& cell_index : measured_index_list)
-  {
-    grid_map::Position3 cell_position3;
-    map_.getPosition3(map_.getHeightLayer(), cell_index, cell_position3);
-
-    PointT point;
-    point.x = cell_position3.x();
-    point.y = cell_position3.y();
-    point.z = cell_position3.z();
-    // point.intensity = map_["intensity"](cell_index(0), cell_index(1));
-
-    map_cloud->push_back(point);
-  }
-
-  return map_cloud;
-}
-
-std::pair<bool, pcl::PointCloud<PointT>::Ptr>
-GlobalMapping::downsampleCloud(const pcl::PointCloud<PointT>::ConstPtr& cloud)
-{
-  // Check if the cloud is empty
-  if (cloud->empty())
-  {
-    ROS_WARN("[GlobalMapping]: Empty cloud received.");
-    return { false, nullptr };
-  }
-
-  // Check if the cloud is in the same frame as the map
-  if (cloud->header.frame_id != map_.getFrameId())
-  {
-    ROS_WARN("[GlobalMapping]: Frame ID mismatch - pointcloud is in a different frame!");
-    return { false, nullptr };
-  }
-
-  map_.addLayer("n_measured", 0.0);
-  map_.clear(map_.getHeightLayer());
-  auto& height_matrix = map_.getHeightMatrix();
-  auto& n_measured_matrix = map_["n_measured"];
-
-  std::vector<grid_map::Index> measured_index_list;
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto& point : *cloud)
-  {
-    cell_position << point.x, point.y;
-    if (!map_.getIndex(cell_position, cell_index))
-      continue;
-
-    if (n_measured_matrix(cell_index(0), cell_index(1)) > 10)
-      continue;
-
-    if (map_.isEmptyAt(map_.getHeightLayer(), cell_index))
-    {
-      height_matrix(cell_index(0), cell_index(1)) = point.z;
-      n_measured_matrix(cell_index(0), cell_index(1)) = 1;
-      measured_index_list.push_back(cell_index);
-    }
-    else
-    {
-      auto& height = height_matrix(cell_index(0), cell_index(1));
-      height = 0.9 * height + 0.1 * point.z;
-      n_measured_matrix(cell_index(0), cell_index(1)) += 1;
-    }
-  }
-
-  auto cloud_downsampled = boost::make_shared<pcl::PointCloud<PointT>>();
-  cloud_downsampled->header = cloud->header;
-  cloud_downsampled->reserve(measured_index_list.size());
-
-  grid_map::Position3 cell_position3;
-  PointT point;
-  for (const auto& cell_index : measured_index_list)
-  {
-    map_.getPosition3(map_.getHeightLayer(), cell_index, cell_position3);
-
-    point.x = cell_position3.x();
-    point.y = cell_position3.y();
-    point.z = cell_position3.z();
-
-    cloud_downsampled->push_back(point);
-  }
-  return { true, cloud_downsampled };
 }
 
 bool GlobalMapping::clearMap(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
-  map_.clearAll();
+  globalmap_.clearAll();
   return true;
 }
 
@@ -208,7 +109,7 @@ bool GlobalMapping::saveLayerToImage(height_map_msgs::SaveLayerToImage::Request&
 
   if (layer == "")  // Save all layers to image
   {
-    for (const auto& layer : map_.getLayers())
+    for (const auto& layer : globalmap_.getLayers())
     {
       if (!saveMapToImage(layer, img_path))
       {
@@ -236,7 +137,7 @@ bool GlobalMapping::saveLayerToImage(height_map_msgs::SaveLayerToImage::Request&
 
 bool GlobalMapping::saveMapToImage(const std::string& layer, const std::string& img_path)
 {
-  const auto& data_matrix = map_[layer];
+  const auto& data_matrix = globalmap_[layer];
 
   if (data_matrix.rows() == 0 || data_matrix.cols() == 0)
   {
@@ -246,9 +147,9 @@ bool GlobalMapping::saveMapToImage(const std::string& layer, const std::string& 
 
   // Convert to cv image
   cv::Mat image;
-  auto min_val = HeightMapMath::getMinVal(map_, layer);
-  auto max_val = HeightMapMath::getMaxVal(map_, layer);
-  if (!HeightMapConverter::toGrayImage(map_, layer, image, min_val, max_val))
+  auto min_val = HeightMapMath::getMinVal(globalmap_, layer);
+  auto max_val = HeightMapMath::getMaxVal(globalmap_, layer);
+  if (!HeightMapConverter::toGrayImage(globalmap_, layer, image, min_val, max_val))
   {
     ROS_ERROR("Failed to convert %s data to image.", layer.c_str());
     return false;
@@ -266,7 +167,7 @@ bool GlobalMapping::saveMapToImage(const std::string& layer, const std::string& 
   YAML::Emitter out;
   out << YAML::BeginMap;
   out << YAML::Key << "Layer" << YAML::Value << layer;
-  out << YAML::Key << "Grid Resolution" << YAML::Value << map_.getResolution();
+  out << YAML::Key << "Grid Resolution" << YAML::Value << globalmap_.getResolution();
   out << YAML::Key << "Min" << YAML::Value << min_val;
   out << YAML::Key << "Max" << YAML::Value << max_val;
   out << YAML::EndMap;
@@ -285,4 +186,114 @@ bool GlobalMapping::saveMapToImage(const std::string& layer, const std::string& 
   // metadata.close();
 
   return true;
+}
+
+void GlobalMapping::toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
+                                  const std::unordered_set<grid_map::Index, IndexHash, IndexEqual>& measured_indices,
+                                  sensor_msgs::PointCloud2& cloud)
+{
+  // Header.
+  cloud.header.frame_id = map.getFrameId();
+  cloud.header.stamp.fromNSec(map.getTimestamp());
+  cloud.is_dense = false;
+
+  // Fields.
+  std::vector<std::string> fieldNames;
+  for (const auto& layer : layers)
+  {
+    if (layer == map.getHeightLayer())
+    {
+      fieldNames.push_back("x");
+      fieldNames.push_back("y");
+      fieldNames.push_back("z");
+    }
+    else if (layer == "color")
+    {
+      fieldNames.push_back("rgb");
+    }
+    else
+    {
+      fieldNames.push_back(layer);
+    }
+  }
+
+  cloud.fields.clear();
+  cloud.fields.reserve(fieldNames.size());
+  int offset = 0;
+
+  for (auto& name : fieldNames)
+  {
+    sensor_msgs::PointField pointField;
+    pointField.name = name;
+    pointField.count = 1;
+    pointField.datatype = sensor_msgs::PointField::FLOAT32;
+    pointField.offset = offset;
+    cloud.fields.push_back(pointField);
+    offset = offset + pointField.count * 4;  // 4 for sensor_msgs::PointField::FLOAT32
+  }                                          // offset value goes from 0, 4, 8, 12, ...
+
+  // Adjusted Resize: Instead of maxNumberOfPoints, use measured_indices.size().
+  size_t numberOfMeasuredPoints = measured_indices.size();
+  cloud.height = 1;
+  cloud.width = numberOfMeasuredPoints;  // Use the size of measured_indices.
+  cloud.point_step = offset;
+  cloud.row_step = cloud.width * cloud.point_step;
+  cloud.data.resize(cloud.height * cloud.row_step);
+
+  // Adjust Points section to iterate over measured_indices.
+  std::unordered_map<std::string, sensor_msgs::PointCloud2Iterator<float>> pointFieldIterators;
+  for (auto& name : fieldNames)
+  {
+    pointFieldIterators.insert(std::make_pair(name, sensor_msgs::PointCloud2Iterator<float>(cloud, name)));
+  }
+
+  // Iterate over measured_indices instead of using GridMapIterator.
+  int count = 0;
+  for (const auto& measured_index : measured_indices)
+  {
+    grid_map::Position3 position;
+    if (!map.getPosition3(map.getHeightLayer(), measured_index, position))
+      continue;
+
+    const auto& cell_position_x = (float)position.x();
+    const auto& cell_position_y = (float)position.y();
+    const auto& cell_height = (float)position.z();
+
+    for (auto& pointFieldIterator : pointFieldIterators)
+    {
+      const auto& pointField = pointFieldIterator.first;
+      auto& pointFieldValue = *(pointFieldIterator.second);
+      if (pointField == "x")
+      {
+        pointFieldValue = cell_position_x;
+      }
+      else if (pointField == "y")
+      {
+        pointFieldValue = cell_position_y;
+      }
+      else if (pointField == "z")
+      {
+        pointFieldValue = cell_height;
+      }
+      else if (pointField == "rgb")
+      {
+        pointFieldValue = (float)(map.at("color", measured_index));
+      }
+      else
+      {
+        pointFieldValue = (float)(map.at(pointField, measured_index));
+      }
+    }
+
+    for (auto& pointFieldIterator : pointFieldIterators)
+    {
+      ++(pointFieldIterator.second);
+    }
+    ++count;
+  }
+  cloud.height = 1;
+  cloud.width = count;
+  cloud.point_step = offset;
+  cloud.row_step = cloud.width * cloud.point_step;
+  cloud.data.resize(cloud.height * cloud.row_step);
 }
