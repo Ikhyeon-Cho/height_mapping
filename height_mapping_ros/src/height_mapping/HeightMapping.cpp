@@ -64,7 +64,7 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
   // Transform pointcloud to base_link
   // Required for height filtering: If already in base_link, then will return the same pointcloud
   const auto& sensor_frame = msg->header.frame_id;
-  auto [get_transform_s2b, sensor_to_baselink] = tf_tree_.getTransform(sensor_frame, baselink_frame);
+  auto [get_transform_s2b, sensor_to_baselink] = tf_.getTransform(sensor_frame, baselink_frame);
   if (!get_transform_s2b)
     return;
   auto lasercloud_baselink = utils::pcl::transformPointcloud<Laser>(lasercloud_raw, sensor_to_baselink);
@@ -82,7 +82,7 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
   start = end;
 
   // Register laser cloud to the map
-  auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
+  auto [get_transform_b2m, base_to_map] = tf_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
   {
     std::cout << "\033[33m[HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
@@ -96,7 +96,7 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
 
   // Downsampling by height map resolution-> each grid cell has only one point, with max height
   auto lasercloud_registered_downsampled =
-      height_map::pclProcessor::maxZGridDownsample<Laser>(lasercloud_registered, grid_resolution_);
+      height_map::pclProcessor::gridDownsampling<Laser>(lasercloud_registered, grid_resolution_);
 
   end = std::chrono::high_resolution_clock::now();
   auto duration_downsampling = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -159,7 +159,7 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
 
   // Transform pointcloud to base_link
   const auto& sensor_frame = msg->header.frame_id;
-  auto [get_transform_s2b, sensor_to_baselink] = tf_tree_.getTransform(sensor_frame, baselink_frame);
+  auto [get_transform_s2b, sensor_to_baselink] = tf_.getTransform(sensor_frame, baselink_frame);
   if (!get_transform_s2b)
     return;
   auto rgbcloud_baselink = utils::pcl::transformPointcloud<Color>(rgbcloud_raw, sensor_to_baselink);
@@ -177,7 +177,7 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
   start = end;
 
   // Register rgb cloud to the map
-  auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
+  auto [get_transform_b2m, base_to_map] = tf_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
   {
     std::cout << "\033[33m[HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
@@ -191,7 +191,7 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
 
   // Downsampling by height map resolution-> each grid cell has only one point, with max height
   auto rgbcloud_registered_downsampled =
-      height_map::pclProcessor::maxZGridDownsample<Color>(rgbcloud_registered, grid_resolution_);
+      height_map::pclProcessor::gridDownsampling<Color>(rgbcloud_registered, grid_resolution_);
 
   end = std::chrono::high_resolution_clock::now();
   auto duration_downsampling = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -234,7 +234,7 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
 void HeightMapping::updatePosition(const ros::TimerEvent& event)
 {
   // Get Transform from base_link to map (tf provided by 3d pose estimator. ex: VINS, LOAM, etc.)
-  auto [get_transform_b2m, base_to_map] = tf_tree_.getTransform(baselink_frame, map_frame);
+  auto [get_transform_b2m, base_to_map] = tf_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
     return;
   // Update map position

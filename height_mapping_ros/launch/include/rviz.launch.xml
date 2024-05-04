@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rviz" type="rviz" name="rviz_height_mapping"
+    args="-d $(find height_mapping)/launch/rviz/height_mapping.rviz" />
+</launch>

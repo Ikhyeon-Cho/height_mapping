@@ -1,7 +1,31 @@
 <launch>
-  <include file="$(find height_mapping)/launch/height_mapping.launch" />
+  <arg name="global_mapping" default="false" />
 
-  <node pkg="rviz" type="rviz" name="rviz_height_mapping"
-    args="-d $(find height_mapping)/launch/rviz/height_mapping.rviz" />
+  <!-- ROS Parameters  -->
+  <rosparam file="$(find height_mapping)/config/params.yaml" command="load"
+    subst_value="true" />
+
+  <!-- Sensor pre-processing node-->
+  <include file="$(find height_mapping)/launch/include/sensor_preprocess.launch.xml" />
+
+  <!-- Height Mapping node -->
+  <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
+  </node>
+
+  <!-- Height Mapping visualization node -->
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="height_mapping_visualization" output="log">
+    <rosparam file="$(find height_mapping)/config/visualization.yaml" />
+  </node>
+
+  <!-- Global Height Mapping node -->
+  <group if="$(arg global_mapping)">
+    <node pkg="height_mapping" type="height_mapping_global_node" name="height_mapping_global" output="screen">
+      <rosparam file="$(find height_mapping)/config/params_global.yaml" command="load" />
+    </node>
+  </group>
+
+  <!-- Rviz -->
+  <include if="$(arg global_mapping)" file="$(find height_mapping)/launch/include/rviz_global.launch.xml" />
+  <include unless="$(arg global_mapping)" file="$(find height_mapping)/launch/include/rviz.launch.xml" />
 
 </launch>

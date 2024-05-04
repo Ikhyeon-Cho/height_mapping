@@ -66,12 +66,12 @@ target_link_libraries(heightmap_visualization_node
   ${catkin_LIBRARIES}
 )
 
-# Global mapping node
-add_executable(global_mapping_node 
-  src/global_mapping/global_mapping_node.cpp
-  src/global_mapping/GlobalMapping.cpp
+# Global Height mapping node
+add_executable(height_mapping_global_node 
+  src/height_mapping_global/global_mapping_node.cpp
+  src/height_mapping_global/GlobalMapping.cpp
 )
-target_link_libraries(global_mapping_node
+target_link_libraries(height_mapping_global_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}

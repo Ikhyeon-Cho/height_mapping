@@ -1,10 +1,10 @@
-grid_map_topic: "/height_mapping/gridmap"
+grid_map_topic: "/height_mapping/map/gridmap"
 grid_map_visualizations:
-  - name: "/height_mapping/pointcloud"
+  - name: "/height_mapping/map/pointcloud"
     type: point_cloud
     params:
       layer: elevation
-  - name: "/height_mapping/map_region"
+  - name: "/height_mapping/map/region"
     type: map_region
     params:
       # white

@@ -12,9 +12,9 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "global_mapping");
+  ros::init(argc, argv, "height_mapping_global");
 
-  GlobalMapping global_mapping_node;
+  GlobalHeightMapping node;
 
   ros::spin();
 

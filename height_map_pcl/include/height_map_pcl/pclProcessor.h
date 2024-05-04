@@ -34,7 +34,7 @@ public:
   pclProcessor() = default;
 
   template <typename PointT>
-  static typename pcl::PointCloud<PointT>::Ptr maxZGridDownsample(const typename pcl::PointCloud<PointT>::Ptr& cloud,
+  static typename pcl::PointCloud<PointT>::Ptr gridDownsampling(const typename pcl::PointCloud<PointT>::Ptr& cloud,
                                                                   float gridSize)
   {
     // Check if the cloud is valid

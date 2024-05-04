@@ -1,5 +1,5 @@
 /*
- * height_map_visualization_node.cpp
+ * heightmap_visualization_node.cpp
  *
  *  Created on: Feb 12, 2024
  *      Author: Ikhyeon Cho
