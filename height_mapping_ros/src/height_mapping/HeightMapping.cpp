@@ -20,23 +20,33 @@ HeightMapping::HeightMapping()
   // - StatMean (by default)
   if (height_estimator_type_ == "KalmanFilter")
   {
-    std::cout << "\033[1;33m[HeightMapping]: Height estimator type ---> KalmanFilter \033[0m\n";
+    std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator type --> KalmanFilter \033[0m\n";
     height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
   }
   else if (height_estimator_type_ == "MovingAverage")
   {
-    std::cout << "\033[1;33m[HeightMapping]: Height estimator type ---> MovingAverage \033[0m\n";
+    std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator type --> MovingAverage \033[0m\n";
     height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
   }
   else if (height_estimator_type_ == "StatMean")
   {
-    std::cout << "\033[1;33m[HeightMapping]: Height estimator type ---> StatisticalMeanEstimator \033[0m\n";
+    std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator type --> StatisticalMeanEstimator \033[0m\n";
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
   else
   {
-    ROS_WARN("[HeightMapping] Invalid height estimator type. Set Default: StatMeanEstimator");
+    ROS_WARN("[HeightMapping::HeightMapping] Invalid height estimator type. Set Default: StatMeanEstimator");
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+  }
+
+  if (debug_)
+  {
+    pub_laser_downsampled_ = nh_priv_.advertise<sensor_msgs::PointCloud2>("/height_mapping/debug/laser_downsampled", 1);
+    pub_rgbd_downsampled_ = nh_priv_.advertise<sensor_msgs::PointCloud2>("/height_mapping/debug/rgbd_downsampled", 1);
+    pub_laser_processing_time_ =
+        nh_priv_.advertise<jsk_rviz_plugins::OverlayText>("/height_mapping/debug/laser_processing_time", 1);
+    pub_rgbd_processing_time_ =
+        nh_priv_.advertise<jsk_rviz_plugins::OverlayText>("/height_mapping/debug/rgbd_processing_time", 1);
   }
 }
 
@@ -45,7 +55,8 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
   if (!lasercloud_received_)
   {
     lasercloud_received_ = true;
-    std::cout << "\033[32m[HeightMapping]: Laser Cloud Received! Use LiDAR pointcloud for height mapping... \033[0m\n";
+    std::cout << "\033[32m[HeightMapping::HeightMapping]: Laser Cloud Received! Use LiDAR pointcloud for height mapping... "
+                 "\033[0m\n";
     robot_pose_update_timer_.start();
   }
 
@@ -85,7 +96,7 @@ void HeightMapping::updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr&
   auto [get_transform_b2m, base_to_map] = tf_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
   {
-    std::cout << "\033[33m[HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
+    std::cout << "\033[33m[HeightMapping::HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
     return;
   }
   auto lasercloud_registered = utils::pcl::transformPointcloud<Laser>(lasercloud_filtered, base_to_map);
@@ -141,7 +152,8 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
   if (!rgbcloud_received_)
   {
     rgbcloud_received_ = true;
-    std::cout << "\033[32m[HeightMapping]: RGB Cloud Received! Use RGB-D pointcloud for height mapping... \033[0m\n";
+    std::cout << "\033[32m[HeightMapping::HeightMapping]: RGB Cloud Received! Use RGB-D pointcloud for height mapping... "
+                 "\033[0m\n";
     robot_pose_update_timer_.start();
   }
 
@@ -180,7 +192,7 @@ void HeightMapping::updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& m
   auto [get_transform_b2m, base_to_map] = tf_.getTransform(baselink_frame, map_frame);
   if (!get_transform_b2m)
   {
-    std::cout << "\033[33m[HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
+    std::cout << "\033[33m[HeightMapping::HeightMapping]: Failed to register the cloud. Skip this frame... \033[0m\n";
     return;
   }
   auto rgbcloud_registered = utils::pcl::transformPointcloud<Color>(rgbcloud_filtered, base_to_map);
@@ -243,6 +255,9 @@ void HeightMapping::updatePosition(const ros::TimerEvent& event)
 
 void HeightMapping::publishHeightmap(const ros::TimerEvent& event)
 {
+  if (!map_.hasHeightValue())
+    return;
+
   grid_map_msgs::GridMap msg_heightmap;
   grid_map::GridMapRosConverter::toMessage(map_, msg_heightmap);
   pub_heightmap_.publish(msg_heightmap);

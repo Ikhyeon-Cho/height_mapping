@@ -12,30 +12,23 @@
 
 int main(int argc, char** argv)
 {
-  std::string node_name{ "sensor_processor" };
+  ros::init(argc, argv, "sensor_processor");
+  ros::NodeHandle nh{ "sensor_processor" };
 
-  ros::init(argc, argv, node_name);
-  ros::NodeHandle nh{ node_name };
-
-  // Read from the parameter server
-  std::string point_type_{ nh.param<std::string>("pointType", "color") };
-  // Set parameter
-
-  if (point_type_ == "color")
+  std::string point_type{ nh.param<std::string>("pointType", "laser") };  // By default, laser pointcloud is used
+  if (point_type == "color")
   {
-    std::cout << "\033[1;32m[SensorProcessor]: Waiting for RGB pointcloud Processing...\033[0m" << std::endl;
-
-    nh.setParam("processedCloudTopic", "color/points");
+    nh.setParam("outputTopic", "/height_mapping/sensor/color/points");
+    std::cout << "\033[1;32m[HeightMapping::SensorProcessor]: Waiting for RGB pointcloud...\033[0m" << std::endl;
 
     SensorProcessor<pcl::PointXYZRGB> node;
     ros::MultiThreadedSpinner spinner(3);
     spinner.spin();
   }
-  else if (point_type_ == "laser")
+  else if (point_type == "laser")
   {
-    std::cout << "\033[1;32m[SensorProcessor]: Waiting for Laser pointcloud Processing...\033[0m" << std::endl;
-
-    nh.setParam("processedCloudTopic", "laser/points");
+    nh.setParam("outputTopic", "/height_mapping/sensor/laser/points");
+    std::cout << "\033[1;32m[HeightMapping::SensorProcessor]: Waiting for Laser pointcloud...\033[0m" << std::endl;
 
     SensorProcessor<pcl::PointXYZI> node;
     ros::MultiThreadedSpinner spinner(3);
@@ -43,7 +36,8 @@ int main(int argc, char** argv)
   }
   else
   {
-    std::cout << "\033[33m[SensorProcessor]: Invalid Point Type!! Supported point types: color, laser\033[0m"
+    std::cout << "\033[33m[HeightMapping::SensorProcessor]: Invalid Point Type!! Supported point types: color, "
+                 "laser\033[0m"
               << std::endl;
     return -1;
   }

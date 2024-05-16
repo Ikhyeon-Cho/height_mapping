@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "height_mapping");
 
-  HeightMapping height_mapping_node;
+  HeightMapping node;
 
   ros::spin();
 

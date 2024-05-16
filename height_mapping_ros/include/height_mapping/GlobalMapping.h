@@ -30,22 +30,29 @@
 #include <yaml-cpp/yaml.h>
 #include <jsk_rviz_plugins/OverlayText.h>
 
-using PointT = pcl::PointXYZRGB;
+// using PointT = pcl::PointXYZRGB;
 
-class GlobalHeightMapping
+template <typename PointT>
+class GlobalMapping
 {
 public:
-  GlobalHeightMapping();
+  GlobalMapping();
 
-  void updateFromLocalMap(const sensor_msgs::PointCloud2ConstPtr& msg);
+  /// @brief Update global map from local map
+  /// @param msg local map pointcloud
+  void updateFromLocalMap(const sensor_msgs::PointCloud2ConstPtr& msg)
+  {
+    pcl::fromROSMsg(*msg, *heightmap_cloud_);
+    addMeasuredGridIndices(globalmap_, *heightmap_cloud_);
+
+    height_estimator_->estimate(globalmap_, *heightmap_cloud_);
+  }
 
   void visualize(const ros::TimerEvent& event);
-
   bool clearMap(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 
   bool saveLayerToImage(height_map_msgs::SaveLayerToImage::Request& request,
                         height_map_msgs::SaveLayerToImage::Response& response);
-
   bool saveMapToImage(const std::string& layer, const std::string& file_path);
 
   // bool saveAsPcd(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
@@ -65,48 +72,51 @@ public:
     }
   };
 
-private:
   // Helper functions
   void addMeasuredGridIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud);
   void toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
                      const std::unordered_set<grid_map::Index, IndexHash, IndexEqual>& measured_indices,
                      sensor_msgs::PointCloud2& cloud);
 
+private:
   ros::NodeHandle nh_{ "height_mapping" };
   ros::NodeHandle nh_priv_{ "~" };
 
-  // Debug Flag
-  bool debug_{ nh_.param<bool>("publishDebugTopics", false) };
-
   // Frame Ids
-  std::string baselink_frame_{ nh_.param<std::string>("baselinkFrame", "base_link") };
-  std::string map_frame_{ nh_.param<std::string>("mapFrame", "map") };
+  std::string baselink_frame_{ nh_priv_.param<std::string>("/frame_id/base_link", "base_link") };
+  std::string map_frame_{ nh_priv_.param<std::string>("/frame_id/map", "map") };
 
   // Global Map parameters
   double grid_resolution_{ nh_priv_.param<double>("gridResolution", 0.1) };
   double map_length_x_{ nh_priv_.param<double>("mapLengthXGlobal", 400) };
   double map_length_y_{ nh_priv_.param<double>("mapLengthYGlobal", 400) };
-
-  // Height Estimator Parameters
-  std::string height_estimator_type_{ nh_priv_.param<std::string>("heightEstimatorType", "StatMean") };
+  std::string height_estimator_type_{ nh_.param<std::string>("heightEstimatorType", "StatMean") };
 
   // Map saver parameters
   std::string home_dir_{ std::getenv("HOME") };
   std::string map_save_directory_{ nh_priv_.param<std::string>("mapSaveDir", home_dir_ + "/Downloads") };
 
   // Duration
-  double map_visualization_rate_{ nh_priv_.param<double>("globalMapVisualizationRate", 10.0) };
+  double map_visualization_rate_{ nh_priv_.param<double>("mapPublishRate", 10.0) };
 
   // ROS
-  ros::Subscriber sub_pointcloud_{ nh_.subscribe("map/pointcloud", 10, &GlobalHeightMapping::updateFromLocalMap, this) };
-  ros::Publisher pub_globalmap_{ nh_.advertise<sensor_msgs::PointCloud2>("globalmap/pointcloud", 1) };
-  ros::Publisher pub_map_region_{ nh_.advertise<visualization_msgs::Marker>("globalmap/region", 1) };
-  ros::Publisher pub_processing_time_{ nh_priv_.advertise<jsk_rviz_plugins::OverlayText>(
-      "debug/visualization_processing_time", 1) };
-  ros::Timer map_visualization_timer_{ nh_.createTimer(map_visualization_rate_, &GlobalHeightMapping::visualize, this) };
+  ros::Subscriber sub_pointcloud_{ nh_priv_.subscribe("/height_mapping/map/pointcloud", 10,
+                                                      &GlobalMapping::updateFromLocalMap, this) };
+  ros::Publisher pub_globalmap_{ nh_priv_.advertise<sensor_msgs::PointCloud2>("/height_mapping/globalmap/pointcloud",
+                                                                              1) };
+  ros::Publisher pub_map_region_{ nh_priv_.advertise<visualization_msgs::Marker>("/height_mapping/globalmap/region",
+                                                                                 1) };
 
-  ros::ServiceServer clear_map_{ nh_.advertiseService("clear_map", &GlobalHeightMapping::clearMap, this) };
-  ros::ServiceServer srv_image_saver_{ nh_.advertiseService("save_to_image", &GlobalHeightMapping::saveLayerToImage, this) };
+  ros::Timer map_visualization_timer_{ nh_priv_.createTimer(map_visualization_rate_, &GlobalMapping::visualize, this) };
+
+  ros::ServiceServer clear_map_{ nh_priv_.advertiseService("/height_mapping/global/clear_map", &GlobalMapping::clearMap,
+                                                           this) };
+  ros::ServiceServer srv_image_saver_{ nh_priv_.advertiseService("/height_mapping/global/save_to_image",
+                                                                 &GlobalMapping::saveLayerToImage, this) };
+
+  // Debug Flag
+  bool debug_{ nh_priv_.param<bool>("debugMode", false) };
+  ros::Publisher pub_processing_time_;
 
 private:
   // Global Map
@@ -115,7 +125,7 @@ private:
   std::unordered_set<grid_map::Index, IndexHash, IndexEqual> measured_indices_;
 
   // Height map cloud
-  pcl::PointCloud<PointT>::Ptr heightmap_cloud_;
+  typename pcl::PointCloud<PointT>::Ptr heightmap_cloud_{ boost::make_shared<pcl::PointCloud<PointT>>() };
 };
 
 #endif  // GLOBAL_MAPPING_H

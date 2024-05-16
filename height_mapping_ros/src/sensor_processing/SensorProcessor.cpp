@@ -13,6 +13,11 @@
 template <typename PointT>
 SensorProcessor<PointT>::SensorProcessor() : is_activated_{ false }
 {
+  // Drop the connection if empty input topic is provided (single sensor usage)
+  if (inputcloud_topic_2_ == "")
+    sub_cloud_2_.shutdown();
+  if (inputcloud_topic_3_ == "")
+    sub_cloud_3_.shutdown();
 }
 
 template <typename PointT>
@@ -22,8 +27,10 @@ void SensorProcessor<PointT>::cloudCallback1(const sensor_msgs::PointCloud2Const
   {
     is_activated_ = true;
     publish_cloud_timer_.start();
-    std::cout << "\033[32m[SensorProcessor]: Data received! Start processing...\033[0m" << std::endl;
+    std::cout << "\033[32m[HeightMapping::SensorProcessor]: Data received! Start processing...\033[0m" << std::endl;
   }
+
+  inputcloud1_->clear();
 
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
@@ -37,6 +44,8 @@ void SensorProcessor<PointT>::cloudCallback1(const sensor_msgs::PointCloud2Const
 template <typename PointT>
 void SensorProcessor<PointT>::cloudCallback2(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
+  inputcloud2_->clear();
+
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::fromROSMsg(*msg, *cloud);
@@ -49,6 +58,8 @@ void SensorProcessor<PointT>::cloudCallback2(const sensor_msgs::PointCloud2Const
 template <typename PointT>
 void SensorProcessor<PointT>::cloudCallback3(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
+  inputcloud3_->clear();
+
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::fromROSMsg(*msg, *cloud);
@@ -68,9 +79,11 @@ void SensorProcessor<PointT>::publishCloud(const ros::TimerEvent& event)
   cloud_processed_->header = inputcloud1_->header;
   cloud_processed_->header.frame_id = baselink_frame;
 
+  if (cloud_processed_->empty())
+    return;
+
   sensor_msgs::PointCloud2 msg;
   pcl::toROSMsg(*cloud_processed_, msg);
-  msg.header.stamp = ros::Time::now();
   pub_cloud_.publish(msg);
 }
 

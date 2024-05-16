@@ -49,48 +49,42 @@ private:
   utils::TransformHandler tf_;
 
   // Topics
-  std::string lidarcloud_topic_{ nh_priv_.param<std::string>("lidarCloudTopic", "/sensor_processor/laser/points") };
-  std::string rgbcloud_topic_{ nh_priv_.param<std::string>("rgbCloudTopic", "/sensor_processor/color/points") };
+  std::string lidarcloud_topic_{ nh_priv_.param<std::string>("lidarCloudTopic",
+                                                             "/height_mapping/sensor/laser/points") };
+  std::string rgbcloud_topic_{ nh_priv_.param<std::string>("rgbCloudTopic",
+                                                           "/height_mapping/sensor/color/points") };
 
   // Frame Ids
-  std::string baselink_frame{ nh_priv_.param<std::string>("baselinkFrame", "base_link") };
-  std::string odom_frame{ nh_priv_.param<std::string>("odometryFrame", "odom") };
-  std::string map_frame{ nh_priv_.param<std::string>("mapFrame", "map") };
-
-  // Pointcloud Preprocessing Parameters
-  double height_min_thrsh_{ nh_priv_.param<double>("minHeightThreshold", -0.5) };
-  double height_max_thrsh_{ nh_priv_.param<double>("maxHeightThreshold", 1.5) };
-  double range_min_thrsh_{ nh_priv_.param<double>("minRangeThreshold", 0.3) };
-  double range_max_thrsh_{ nh_priv_.param<double>("maxRangeThreshold", 10.0) };
-  double depth_min_thrsh_{ nh_priv_.param<double>("minDepthThreshold", 1.0) };
-  double depth_max_thrsh_{ nh_priv_.param<double>("maxDepthThreshold", 5.0) };
+  std::string baselink_frame{ nh_priv_.param<std::string>("/frame_id/base_link", "base_link") };
+  std::string odom_frame{ nh_priv_.param<std::string>("/frame_id/odom", "odom") };
+  std::string map_frame{ nh_priv_.param<std::string>("/frame_id/map", "map") };
 
   // Height Map Parameters
   double grid_resolution_{ nh_priv_.param<double>("gridResolution", 0.1) };
   double map_length_x_{ nh_priv_.param<double>("mapLengthX", 10) };
   double map_length_y_{ nh_priv_.param<double>("mapLengthY", 10) };
-  std::string height_estimator_type_{ nh_priv_.param<std::string>("heightEstimatorType", "KalmanFilter") };
+  std::string height_estimator_type_{ nh_priv_.param<std::string>("heightEstimatorType", "StatMean") };
+  double height_min_thrsh_{ nh_priv_.param<double>("minHeightThreshold", -0.5) };
+  double height_max_thrsh_{ nh_priv_.param<double>("maxHeightThreshold", 1.5) };
 
   // Timer
   double pose_update_rate_{ nh_priv_.param<double>("poseUpdateRate", 20) };
   double heightmap_pub_rate_{ nh_priv_.param<double>("mapPublishRate", 10) };
 
-  // Debug Flag
-  bool debug_{ nh_priv_.param<bool>("debugMode", false) };
-
   // ROS
   ros::Subscriber sub_lidar_{ nh_priv_.subscribe(lidarcloud_topic_, 1, &HeightMapping::updateFromLaserCloud, this) };
   ros::Subscriber sub_rgbd_{ nh_priv_.subscribe(rgbcloud_topic_, 1, &HeightMapping::updateFromRGBCloud, this) };
-  ros::Publisher pub_laser_downsampled_{ nh_priv_.advertise<sensor_msgs::PointCloud2>("input/laser_downsampled", 1) };
-  ros::Publisher pub_rgbd_downsampled_{ nh_priv_.advertise<sensor_msgs::PointCloud2>("input/rgbd_downsampled", 1) };
-  ros::Publisher pub_heightmap_{ nh_priv_.advertise<grid_map_msgs::GridMap>("map/gridmap", 1) };
-  ros::Publisher pub_laser_processing_time_{ nh_priv_.advertise<jsk_rviz_plugins::OverlayText>("debug/laser_processing_time",
-                                                                                              1) };
-  ros::Publisher pub_rgbd_processing_time_{ nh_priv_.advertise<jsk_rviz_plugins::OverlayText>("debug/rgbd_processing_time",
-                                                                                             1) };
+  ros::Publisher pub_heightmap_{ nh_priv_.advertise<grid_map_msgs::GridMap>("/height_mapping/map/gridmap", 1) };
+
+  // Debug Flag
+  bool debug_{ nh_priv_.param<bool>("debugMode", false) };
+  ros::Publisher pub_laser_downsampled_;
+  ros::Publisher pub_rgbd_downsampled_;
+  ros::Publisher pub_laser_processing_time_;
+  ros::Publisher pub_rgbd_processing_time_;
 
   ros::Timer robot_pose_update_timer_{ nh_priv_.createTimer(pose_update_rate_, &HeightMapping::updatePosition, this,
-                                                           false, false) };  // oneshot = false, autostart = false
+                                                            false, false) };  // oneshot = false, autostart = false
   ros::Timer pub_heightmap_timer_{ nh_priv_.createTimer(heightmap_pub_rate_, &HeightMapping::publishHeightmap, this) };
 
 private:

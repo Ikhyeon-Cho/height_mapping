@@ -30,6 +30,10 @@ public:
 
   void publishCloud(const ros::TimerEvent& event);
 
+  /// @brief Templated function to process pointcloud
+  /// @param cloud_raw input pointcloud
+  /// @param cloud_processed output pointcloud in base_link frame. If the processing fails, return input pointcloud
+  /// @return true if the processing is successful
   bool processCloud(const typename pcl::PointCloud<PointT>::Ptr& cloud_raw,
                     typename pcl::PointCloud<PointT>::Ptr& cloud_processed)
   {
@@ -45,6 +49,7 @@ public:
     auto [get_transform_s2b, sensor_to_baselink] = tf_tree_.getTransform(sensor_frame, baselink_frame);
     if (!get_transform_s2b)
       return false;
+
     auto cloud_at_baselink = utils::pcl::transformPointcloud<PointT>(cloud_downsampled, sensor_to_baselink);
 
     // Range filter
@@ -63,17 +68,17 @@ private:
   std::string inputcloud_topic_1_{ nh_priv_.param<std::string>("inputCloudTopic1", "/sensor1/points") };
   std::string inputcloud_topic_2_{ nh_priv_.param<std::string>("inputCloudTopic2", "/sensor2/points") };
   std::string inputcloud_topic_3_{ nh_priv_.param<std::string>("inputCloudTopic3", "/sensor3/points") };
-  std::string processed_cloud_topic_{ nh_priv_.param<std::string>("processedCloudTopic", "points") };
+  std::string processed_cloud_topic_{ nh_priv_.param<std::string>("outputTopic", "points") };
 
   // Frame Ids
-  std::string baselink_frame{ nh_priv_.param<std::string>("baselinkFrame", "base_link") };
-  std::string odom_frame{ nh_priv_.param<std::string>("odometryFrame", "odom") };
-  std::string map_frame{ nh_priv_.param<std::string>("mapFrame", "map") };
+  std::string baselink_frame{ nh_priv_.param<std::string>("/frame_id/base_link", "base_link") };
+  std::string odom_frame{ nh_priv_.param<std::string>("/frame_id/odom", "odom") };
+  std::string map_frame{ nh_priv_.param<std::string>("/frame_id/map", "map") };
 
   // Pointcloud Preprocessing Parameters
-  double downsampling_resolution_{ nh_priv_.param<double>("downsamplingResolution", 0.02) };
+  double downsampling_resolution_{ nh_priv_.param<double>("downsamplingResolution", 0.0) };
   double range_min_thrsh_{ nh_priv_.param<double>("minRangeThreshold", 0.3) };
-  double range_max_thrsh_{ nh_priv_.param<double>("maxRangeThreshold", 5.0) };
+  double range_max_thrsh_{ nh_priv_.param<double>("maxRangeThreshold", 10.0) };
 
   // Timer
   double cloud_pub_rate_{ nh_priv_.param<double>("cloudPublishRate", 15.0) };
