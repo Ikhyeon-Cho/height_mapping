@@ -6,7 +6,7 @@ This repository provides the `height_mapping` [ROS](https://www.ros.org/) packag
 This is a research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Features
-The package is designed for the navigation task with ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). The height attributes of the robot surroundings is mapped in a robot-centric perspective. 
+The package is designed for the navigation task with ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). The height attributes are estimated and mapped in a robot-centric perspective. 
  
 
 
