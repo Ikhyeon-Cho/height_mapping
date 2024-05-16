@@ -1,0 +1,29 @@
+<launch>
+  <arg name="global_mapping" default="false" />
+  <arg name="debug_mode" default="false" />
+  <!-- Height Mapping -->
+  <group ns="height_mapping">
+
+    <!-- ROS Parameters  -->
+    <rosparam file="$(find height_mapping)/config/params.yaml" command="load" subst_value="true" />
+
+    <!-- Sensor Processing node-->
+    <include file="$(find height_mapping)/launch/include/sensor_processor.launch.xml" />
+
+    <!-- Mapping node -->
+    <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
+      <param name="debugMode" value="$(arg debug_mode)" />
+    </node>
+
+    <!-- Map Visualization node -->
+    <node pkg="grid_map_visualization" type="grid_map_visualization" name="map_visualization" output="log">
+      <rosparam file="$(find height_mapping)/config/visualization.yaml" />
+      <param name="debugMode" value="$(arg debug_mode)" />
+    </node>
+
+    <!-- Global Mapping node -->
+    <include if="$(arg global_mapping)" file="$(find height_mapping)/launch/include/global_mapping.launch.xml" />
+
+  </group>
+
+</launch>
