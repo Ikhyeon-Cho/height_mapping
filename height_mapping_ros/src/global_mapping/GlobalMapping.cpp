@@ -1,5 +1,5 @@
 /*
- * GlobalHeightMapping.cpp
+ * GlobalMapping.cpp
  *
  *  Created on: Dec 2, 2023
  *      Author: Ikhyeon Cho
@@ -9,13 +9,13 @@
 
 #include "height_mapping/GlobalMapping.h"
 
-GlobalHeightMapping::GlobalHeightMapping()
+template <typename PointT>
+GlobalMapping<PointT>::GlobalMapping()
 {
   globalmap_.setFrameId(map_frame_);
   globalmap_.setPosition(grid_map::Position(0.0, 0.0));
   // globalmap_.setPosition(grid_map::Position(globalmap_.getLength().x() / 2, globalmap_.getLength().y() / 2));
 
-  heightmap_cloud_ = boost::make_shared<pcl::PointCloud<PointT>>();
   measured_indices_.reserve(globalmap_.getSize().prod());
 
   if (height_estimator_type_ == "KalmanFilter")
@@ -34,20 +34,18 @@ GlobalHeightMapping::GlobalHeightMapping()
   {
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
+
+  if (debug_)
+  {
+    pub_processing_time_ =
+        nh_.advertise<jsk_rviz_plugins::OverlayText>("/height_mapping/debug/globalmap/vis_processing_time", 1);
+  }
+
+  std::cout << "\033[1;32m[HeightMapping::GlobalMapping]: Waiting for Height map... \033[0m\n";
 }
 
-void GlobalHeightMapping::updateFromLocalMap(const sensor_msgs::PointCloud2ConstPtr& msg)
-{
-  // Convert msg to pcl::PointCloud
-  pcl::fromROSMsg(*msg, *heightmap_cloud_);
-
-  addMeasuredGridIndices(globalmap_, *heightmap_cloud_);
-
-  // Update global map from local map
-  height_estimator_->estimate(globalmap_, *heightmap_cloud_);
-}
-
-void GlobalHeightMapping::visualize(const ros::TimerEvent& event)
+template <typename PointT>
+void GlobalMapping<PointT>::visualize(const ros::TimerEvent& event)
 {
   // Timer for benchmarking
   auto start = std::chrono::high_resolution_clock::now();
@@ -70,11 +68,12 @@ void GlobalHeightMapping::visualize(const ros::TimerEvent& event)
   overlay_text.width = 300;
   overlay_text.text = "Visualization processing Time: " + std::to_string(duration.count()) + " ms";
   // pub_processing_time_.publish(
-      // HeightMapMsgs::toOverlayText("Processing Time: " + std::to_string(duration.count()) + " ms"));
+  // HeightMapMsgs::toOverlayText("Processing Time: " + std::to_string(duration.count()) + " ms"));
   pub_processing_time_.publish(overlay_text);
 }
 
-void GlobalHeightMapping::addMeasuredGridIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud)
+template <typename PointT>
+void GlobalMapping<PointT>::addMeasuredGridIndices(const grid_map::HeightMap& map, const pcl::PointCloud<PointT>& cloud)
 {
   // Save measured indices for efficient visualization
   grid_map::Index cell_index;
@@ -93,14 +92,16 @@ void GlobalHeightMapping::addMeasuredGridIndices(const grid_map::HeightMap& map,
   }
 }
 
-bool GlobalHeightMapping::clearMap(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
+template <typename PointT>
+bool GlobalMapping<PointT>::clearMap(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   globalmap_.clearAll();
   return true;
 }
 
-bool GlobalHeightMapping::saveLayerToImage(height_map_msgs::SaveLayerToImage::Request& req,
-                                     height_map_msgs::SaveLayerToImage::Response& res)
+template <typename PointT>
+bool GlobalMapping<PointT>::saveLayerToImage(height_map_msgs::SaveLayerToImage::Request& req,
+                                             height_map_msgs::SaveLayerToImage::Response& res)
 {
   // Srv input
   auto img_path = std::filesystem::path(map_save_directory_) / req.map_name;
@@ -139,7 +140,8 @@ bool GlobalHeightMapping::saveLayerToImage(height_map_msgs::SaveLayerToImage::Re
   }
 }
 
-bool GlobalHeightMapping::saveMapToImage(const std::string& layer, const std::string& img_path)
+template <typename PointT>
+bool GlobalMapping<PointT>::saveMapToImage(const std::string& layer, const std::string& img_path)
 {
   const auto& data_matrix = globalmap_[layer];
 
@@ -192,9 +194,10 @@ bool GlobalHeightMapping::saveMapToImage(const std::string& layer, const std::st
   return true;
 }
 
-void GlobalHeightMapping::toPointCloud2(const grid_map::HeightMap& map, const std::vector<std::string>& layers,
-                                  const std::unordered_set<grid_map::Index, IndexHash, IndexEqual>& measured_indices,
-                                  sensor_msgs::PointCloud2& cloud)
+template <typename PointT>
+void GlobalMapping<PointT>::toPointCloud2(
+    const grid_map::HeightMap& map, const std::vector<std::string>& layers,
+    const std::unordered_set<grid_map::Index, IndexHash, IndexEqual>& measured_indices, sensor_msgs::PointCloud2& cloud)
 {
   // Header.
   cloud.header.frame_id = map.getFrameId();
@@ -301,3 +304,6 @@ void GlobalHeightMapping::toPointCloud2(const grid_map::HeightMap& map, const st
   cloud.row_step = cloud.width * cloud.point_step;
   cloud.data.resize(cloud.height * cloud.row_step);
 }
+
+template class GlobalMapping<pcl::PointXYZRGB>;
+template class GlobalMapping<pcl::PointXYZI>;
