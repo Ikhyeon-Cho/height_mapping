@@ -37,10 +37,10 @@ git clone https://github.com/Ikhyeon-Cho/height_mapping.git
 cd ../
 catkin build height_mapping
 ```
-**Note:** For the best performance, complie with the option `-DCMAKE_BUILT_TYPE=release`. It makes significant improvements.
+**Note:** For the best performance, complie with the option `-DCMAKE_BUILD_TYPE=release`. It makes significant improvements.
 
 ## Basic Usage
-1. Configure the parameters in `height_mapping/config/params.yaml`
+1. Configure the parameters in `height_mapping_ros/config/params.yaml`
 2. To start the height mapping, use command
   ```
   roslaunch height_mapping run.launch
