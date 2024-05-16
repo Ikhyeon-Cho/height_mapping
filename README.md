@@ -6,7 +6,7 @@ This repository provides the `height_mapping` [ROS](https://www.ros.org/) packag
 This is a research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Features
-The package is designed for the navigation task with ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual/LiDAR Odometry or SLAM system). The height attributes of the robot surroundings is mapped in a robot-centric perspective. 
+The package is designed for the navigation task with ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). The height attributes of the robot surroundings is mapped in a robot-centric perspective. 
  
 
 
@@ -22,6 +22,7 @@ The package is designed for the navigation task with ground mobile robots, equip
 For installation of **`grid_map`**, use the following commands:
 ```
 sudo apt install ros-noetic-grid-map
+sudo apt install ros-noetic-grid-map-visualization
 ```
 
 **Build:** In order to install `height_mapping` package, clone the latest version from this repository and compile the package from source.
@@ -84,7 +85,7 @@ The `sensor_processor` node do some sensor input pre-processing for height mappi
     You can configure the topic name of the input measurement streams here.
 
 - **`sensor_processor/downsamplingResolution`** (double, default: 0.0) <br>
-    The downsampling resolution of the pointcloud. Unit: [m/voxel]. If set to 0.0, then the processor skips the downsampling.
+    The downsampling resolution of the pointcloud. If set to 0.0, then the processor skips the downsampling. Unit: [m/voxel]
 
 - **`sensor_processor/minRangeThreshold`** (double, default: 0.3) <br>
     The minimum range of the measurements from the robot. The points less than the range will be removed and not used for height mapping. Unit: [m]
@@ -138,3 +139,51 @@ The `height_mapping` node that locally maps the surrounding terrains in a robot-
 
 - **`height_mapping/mapPublishRate`** (double, default: 15.0 ) <br>
     The height map publish rate. Unit: [Hz]
+
+<br>
+
+### map_visualization
+The `map_visualization` node that publishes the several height map-related messages, like map regions or height map in pointclouds formats.
+
+#### Subscribed Topics
+- **`/height_mapping/map/gridmap`** ([grid_map_msgs/GridMap](https://docs.ros.org/en/kinetic/api/grid_map_msgs/html/msg/GridMap.html)) <br>
+    The estimated height map.
+
+#### Published Topics
+- **`/height_mapping/map/pointcloud`** ([sensor_msgs/PointCloud2](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/PointCloud2.html)) <br>
+    The estimated height map in point cloud types.
+
+- **`/height_mapping/map/region`** ([visualization_msgs/Marker](https://docs.ros.org/en/noetic/api/visualization_msgs/html/msg/Marker.html)) <br>
+    The boundary of the height map.
+
+<br>
+
+### global_mapping
+The `global_mapping` node subscribes the local height map (in pointcloud) from the `height_mapping` node, and publishes the map in a much large (global) scale.
+
+#### Subscribed Topics
+- **`/height_mapping/map/pointcloud`** ([sensor_msgs/PointCloud2](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/PointCloud2.html)) <br>
+    The estimated height map in point cloud types.
+
+#### Published Topics
+- **`/height_mapping/globalmap/pointcloud`** ([sensor_msgs/PointCloud2](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/PointCloud2.html)) <br>
+    The estimated global height map in point cloud types.
+
+- **`/height_mapping/globalmap/region`** ([visualization_msgs/Marker](https://docs.ros.org/en/noetic/api/visualization_msgs/html/msg/Marker.html)) <br>
+    The boundary of the global height map.
+
+#### Parameters
+- **`global_mapping/gridResolution`** (double, default: 0.1 ) <br>
+    The grid resolution of the global height map. Unit: [m/grid]
+
+- **`global_mapping/mapLengthX`** (double, default: 400.0 ) <br>
+    The Length of global height map in the x-axis of the map frame. Unit: [m]
+
+- **`global_mapping/mapLengthY`** (double, default: 400.0 ) <br>
+    The Length of global height map in the y-axis of the map frame. Unit: [m]
+
+- **`global_mapping/mapPublishRate`** (double, default: 10.0 ) <br>
+    The global height map publish rate. Unit: [Hz]
+
+- **`global_mapping/mapSaveDir`** (string, default: "{HOME}/Downloads" ) <br>
+    The folder path to save global map in image.
