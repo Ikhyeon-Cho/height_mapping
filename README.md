@@ -1,7 +1,10 @@
 # Height Mapping
 This repository provides the `height_mapping` [ROS](https://www.ros.org/) package for 2.5D gridded height mapping (or elevation mapping) of mobile robots operating in complex 3D terrains. Given 3D pose estimation and the range measurements, `height_mapping` package creates a dense terrain map around the robot, which is necessary for the downstream tasks like traversability estimation, obstacle avoidance, and path planning in challenging rough terrain.
 
-
+<p align='center'>
+    <img src="height_mapping_ros/docs/height_mapping.gif" width="400" height="223"/>
+    <img src="height_mapping_ros/docs/height_mapping.png" width="400" height="225"/>
+</p>
 
 This is a research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
