@@ -1,32 +1,38 @@
 # Height Mapping
-This repository provides the `height_mapping` [ROS](https://www.ros.org/) package for 2.5D gridded height mapping (or elevation mapping) of mobile robots operating in complex 3D terrains. Given 3D pose estimation and the range measurements, `height_mapping` package creates a dense terrain map around the robot, which is necessary for the downstream tasks like traversability estimation, obstacle avoidance, and path planning in challenging rough terrain.
+This repository provides `height_mapping` [ROS](https://www.ros.org/) package for 2.5D gridded height mapping (or elevation mapping), designed for mobile robots operating The `height_mapping` package creates a dense terrain map around the robot, which is necessary for the downstream tasks like traversability estimation, obstacle avoidance, and path planning in challenging rough terrain.
 
+This is a research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+
+## Features
+<p align='center'>
+    <img src="height_mapping_ros/docs/height_map.jpg" width="800"/>
+</p>
 <p align='center'>
     <img src="height_mapping_ros/docs/height_mapping.gif" width="400" height="223"/>
     <img src="height_mapping_ros/docs/height_mapping.png" width="400" height="225"/>
 </p>
 
-This is a research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
-
-## Features
-<p align='left'>
-    <img src="height_mapping_ros/docs/height_map.jpg" width="800"/>
-</p>
-
-The package is designed for the navigation task with ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). During the navigation of a robot, the precise geometry of surrounding terrains are estimated and mapped in a robot-centric perspective. 
+**Overview**: The package is tailored for ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). Given 3D pose estimation and range measurements, **the package creates a dense terrain map around the robot**. During the navigation of a robot, the precise geometry of surrounding terrains are estimated and mapped in a robot-centric perspective. This is crucial for the tasks like traversability estimation, obstacle avoidance, and path planning in challenging rough terrain.
  
+Here are some several key features that the `height_mapping` package provides:
 
+- **Multiple Height Estimation Methods**:  The `height_mapping` node offers several height estimation techniques, including `Statistical Mean Filter`, `Kalman Filter`, and `Moving Average Filter`. This flexibility allows the package to adapt to various mapping needs and environmental conditions.
 
+- **Multi-Sensor Fusion**: The `sensor_processor` node integrates data from multiple range sensors (e.g., LiDAR, structured light sensors like Kinect and RealSense, and stereo cameras). This fusion results in a comprehensive and accurate representation of the surrounding terrain, enhancing much denser representation of the environment with larger field-of-view.
+
+- **Efficient 2.5D Grid Map Structure**: Utilizing a 2.5D grid map structure, the package efficiently manages and processes 3D terrain geometry, balancing detail with computational load. This structure is particularly well-suited for real-time applications, enabling quick updates and adjustments as the robot navigates.
+
+- **Global Mapping**: The `global_mapping` node aggregates local height maps into an extended global map, providing a broader context for navigation. This global perspective is crucial for long-range planning and overall mission success.
 
 
 ## Installation
 **Dependencies:** This software is built on the Robotic Operating System ([ROS](https://www.ros.org/)). We assume that the followings are installed.
 - Ubuntu (Tested on 20.04) 
 - ROS (Tested on [ROS Noetic](https://wiki.ros.org/noetic))
-- PCL >= 1.10 (Point cloud library)
+- PCL (Point cloud library, tested on pcl-1.10)
 - [grid_map](https://github.com/anybotics/grid_map) library
 
-For installation of **`grid_map`**, use the following commands:
+For the installation of **`grid_map`**, use the following commands:
 ```
 sudo apt install ros-noetic-grid-map
 sudo apt install ros-noetic-grid-map-visualization
@@ -40,7 +46,7 @@ git clone https://github.com/Ikhyeon-Cho/height_mapping.git
 cd ../
 catkin build height_mapping
 ```
-**Note:** For the best performance, complie with the option `-DCMAKE_BUILD_TYPE=release`. It makes significant improvements.
+> **Note:** For the best performance, complie with the option `-DCMAKE_BUILD_TYPE=release`. It makes significant improvements.
 
 ## Basic Usage
 1. Configure the parameters in `height_mapping_ros/config/params.yaml`
@@ -194,3 +200,15 @@ The `global_mapping` node subscribes the local height map (in pointcloud) from t
 
 - **`global_mapping/mapSaveDir`** (string, default: "{HOME}/Downloads" ) <br>
     The folder path to save global map in image.
+
+## Related Projects
+To see the real-world application of this project, please refer to:
+
+**International:**
+<br>
+- *['Learning Self-supervised Traversability with Navigation Experiences of Mobile Robots: A Risk-aware Self-training Approach'](https://github.com/Ikhyeon-Cho/urban-terrain-dataset) (IEEE Robotics and Automation Letters, [paper](https://ieeexplore.ieee.org/document/10468651) accepted in Feb., 2024).*
+
+
+**Domestic:**
+<br>
+- *'Traversability Analysis in Outdoor Environment with Elevation Grid Map Update Method' (Conference on Information and Control Systems, in Oct., 2021)*
