@@ -16,11 +16,11 @@ This is a research code, expect that it changes often and any fitness for a part
  
 Here are some several key features that the `height_mapping` package provides:
 
+- **Efficient 2.5D Grid Map Structure**: Utilizing a 2.5D grid map structure, the package efficiently manages and processes 3D terrain geometry, balancing detail with computational load. This structure is particularly well-suited for real-time applications, enabling quick updates and adjustments as the robot navigates.
+
 - **Multiple Height Estimation Methods**:  The `height_mapping` node offers several height estimation techniques, including `Statistical Mean Filter`, `Kalman Filter`, and `Moving Average Filter`. This flexibility allows the package to adapt to various mapping needs and environmental conditions.
 
 - **Multi-Sensor Fusion**: The `sensor_processor` node integrates data from multiple range sensors (e.g., LiDAR, structured light sensors like Kinect and RealSense, and stereo cameras). This fusion results in a comprehensive and accurate representation of the surrounding terrain, enhancing much denser representation of the environment with larger field-of-view.
-
-- **Efficient 2.5D Grid Map Structure**: Utilizing a 2.5D grid map structure, the package efficiently manages and processes 3D terrain geometry, balancing detail with computational load. This structure is particularly well-suited for real-time applications, enabling quick updates and adjustments as the robot navigates.
 
 - **Global Mapping**: The `global_mapping` node aggregates local height maps into an extended global map, providing a broader context for navigation. This global perspective is crucial for long-range planning and overall mission success.
 
