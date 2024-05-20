@@ -30,8 +30,6 @@ void SensorProcessor<PointT>::cloudCallback1(const sensor_msgs::PointCloud2Const
     std::cout << "\033[32m[HeightMapping::SensorProcessor]: Data received! Start processing...\033[0m" << std::endl;
   }
 
-  inputcloud1_->clear();
-
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::fromROSMsg(*msg, *cloud);
@@ -44,8 +42,6 @@ void SensorProcessor<PointT>::cloudCallback1(const sensor_msgs::PointCloud2Const
 template <typename PointT>
 void SensorProcessor<PointT>::cloudCallback2(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-  inputcloud2_->clear();
-
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::fromROSMsg(*msg, *cloud);
@@ -58,8 +54,6 @@ void SensorProcessor<PointT>::cloudCallback2(const sensor_msgs::PointCloud2Const
 template <typename PointT>
 void SensorProcessor<PointT>::cloudCallback3(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-  inputcloud3_->clear();
-
   auto cloud = boost::make_shared<pcl::PointCloud<PointT>>();
   auto cloud_processed = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::fromROSMsg(*msg, *cloud);
