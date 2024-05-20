@@ -14,9 +14,9 @@ template <typename PointT>
 SensorProcessor<PointT>::SensorProcessor() : is_activated_{ false }
 {
   // Drop the connection if empty input topic is provided (single sensor usage)
-  if (inputcloud_topic_2_ == "")
+  if (inputcloud_topic_2_.empty())
     sub_cloud_2_.shutdown();
-  if (inputcloud_topic_3_ == "")
+  if (inputcloud_topic_3_.empty())
     sub_cloud_3_.shutdown();
 }
 
