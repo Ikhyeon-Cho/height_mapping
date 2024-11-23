@@ -8,7 +8,7 @@
  */
 
 #include <ros/ros.h>
-#include "height_mapping/SensorProcessor.h"
+#include "height_mapping_ros/SensorProcessor.h"
 
 int main(int argc, char** argv)
 {

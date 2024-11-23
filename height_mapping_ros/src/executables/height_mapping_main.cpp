@@ -1,5 +1,5 @@
 /*
- * height_mapping_node.cpp
+ * height_mapping_main.cpp
  *
  *  Created on: Aug 17, 2023
  *      Author: Ikhyeon Cho
@@ -8,13 +8,15 @@
  */
 
 #include <ros/ros.h>
-#include "height_mapping/HeightMapping.h"
+#include "height_mapping_ros/HeightMappingNode.h"
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "height_mapping");
+  ros::NodeHandle nh;
+  ros::NodeHandle pnh("~");
 
-  HeightMapping node;
+  HeightMappingNode node(nh, pnh);
 
   ros::spin();
 

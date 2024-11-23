@@ -8,7 +8,7 @@
  */
 
 #include <ros/ros.h>
-#include "height_mapping/GlobalMapping.h"
+#include "height_mapping_ros/GlobalMapping.h"
 
 int main(int argc, char** argv)
 {

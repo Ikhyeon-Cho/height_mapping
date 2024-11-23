@@ -7,7 +7,7 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_mapping/GlobalMapping.h"
+#include "height_mapping_ros/GlobalMapping.h"
 
 template <typename PointT>
 GlobalMapping<PointT>::GlobalMapping()

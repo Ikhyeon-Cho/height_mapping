@@ -7,7 +7,7 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_mapping/SensorProcessor.h"
+#include "height_mapping_ros/SensorProcessor.h"
 #include <chrono>
 
 template <typename PointT>

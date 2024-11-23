@@ -5,11 +5,11 @@ This is a research code, expect that it changes often and any fitness for a part
 
 ## Features
 <p align='center'>
-    <img src="height_mapping_ros/docs/height_map.jpg" width="800"/>
+    <img src="figures/height_map.jpg" width="800"/>
 </p>
 <p align='center'>
-    <img src="height_mapping_ros/docs/height_mapping.gif" width="400" height="223"/>
-    <img src="height_mapping_ros/docs/height_mapping.png" width="400" height="225"/>
+    <img src="figures/height_mapping.gif" width="400" height="223"/>
+    <img src="figures/height_mapping.png" width="400" height="225"/>
 </p>
 
 **Overview**: The package is tailored for ground mobile robots, equipped with **range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) and a **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). Given 3D pose estimation and range measurements, **the package creates a dense terrain map around the robot**. During the navigation of a robot, the precise geometry of surrounding terrains are estimated and mapped in a robot-centric perspective. This is crucial for the tasks like traversability estimation, obstacle avoidance, and path planning in challenging rough terrain.
