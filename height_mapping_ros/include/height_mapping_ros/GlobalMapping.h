@@ -20,7 +20,6 @@
 // Point types
 #include "PointTypes.h"
 
-// Move these to a utility header if used in multiple places
 namespace std {
 template <> struct hash<grid_map::Index> {
   std::size_t operator()(const grid_map::Index &index) const {
@@ -60,10 +59,6 @@ public:
 
   bool clearMap();
 
-  template <typename PointT>
-  void addMeasuredGridIndices(const grid_map::HeightMap &map,
-                              const pcl::PointCloud<PointT> &cloud);
-
   bool saveLayerToImage(height_map_msgs::SaveLayerToImage::Request &request,
                         height_map_msgs::SaveLayerToImage::Response &response);
   bool saveMapToImage(const std::string &layer, const std::string &file_path);
@@ -71,18 +66,17 @@ public:
   // bool saveAsPcd(std_srvs::Empty::Request& request,
   // std_srvs::Empty::Response& response);
 
-  void
-  toPointCloud2(const grid_map::HeightMap &map,
-                const std::vector<std::string> &layers,
-                const std::unordered_set<grid_map::Index> &measured_indices,
-                sensor_msgs::PointCloud2 &cloud);
-
   const grid_map::HeightMap &getHeightMap() const { return globalmap_; }
   const std::unordered_set<grid_map::Index> &getMeasuredIndices() const {
     return measured_indices_;
   }
 
 private:
+  void initGlobalMap();
+  void initHeightEstimator();
+  template <typename PointT>
+  void addMeasuredGridIndices(const grid_map::HeightMap &map,
+                              const pcl::PointCloud<PointT> &cloud);
   grid_map::HeightMap globalmap_{400, 400, 0.1};
   Parameters params_;
 

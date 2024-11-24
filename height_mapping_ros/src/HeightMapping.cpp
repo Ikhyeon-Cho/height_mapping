@@ -12,44 +12,64 @@
 HeightMapping::HeightMapping(const Parameters &params)
     : params_{params}, heightFilter_{params.minHeight, params.maxHeight} {
 
-  // 0. Check validity of parameters
-  if (params.gridResolution <= 0) {
+  paramValidityCheck();
+
+  initHeightMap();
+
+  initHeightEstimator();
+}
+
+void HeightMapping::paramValidityCheck() {
+
+  if (params_.gridResolution <= 0) {
     throw std::invalid_argument(
         "[HeightMapping::HeightMapping]: Grid resolution must be positive");
   }
-  if (params.mapLengthX <= 0 || params.mapLengthY <= 0) {
+  if (params_.mapLengthX <= 0 || params_.mapLengthY <= 0) {
     throw std::invalid_argument(
         "[HeightMapping::HeightMapping]: Map dimensions must be positive");
   }
+}
 
-  // 1. Set map frame and geometry
-  map_.setFrameId(params.mapFrame);
-  map_.setGeometry(grid_map::Length(params.mapLengthX, params.mapLengthY),
-                   params.gridResolution);
+void HeightMapping::initHeightMap() {
+  map_.setFrameId(params_.mapFrame);
+  map_.setGeometry(grid_map::Length(params_.mapLengthX, params_.mapLengthY),
+                   params_.gridResolution);
+}
 
-  // 2. Set height estimator
+void HeightMapping::initHeightEstimator() {
+
+  // Set height estimator
   // - Kalman Filter
   // - Moving Average
   // - StatMean (by default)
-  if (params.heightEstimatorType == "KalmanFilter") {
+
+  if (params_.heightEstimatorType == "KalmanFilter") {
+    height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
+
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> KalmanFilter \033[0m\n";
-    height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
-  } else if (params.heightEstimatorType == "MovingAverage") {
+
+  } else if (params_.heightEstimatorType == "MovingAverage") {
+    height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
+
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> MovingAverage \033[0m\n";
-    height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
-  } else if (params.heightEstimatorType == "StatMean") {
+
+  } else if (params_.heightEstimatorType == "StatMean") {
+    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> StatisticalMeanEstimator "
                  "\033[0m\n";
-    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+
   } else {
-    ROS_WARN("[HeightMapping::HeightMapping] Invalid height estimator type. "
-             "Set Default: StatMeanEstimator");
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+
+    std::cout << "\033[1;33m[HeightMapping::HeightMapping] Invalid height "
+                 "estimator type. Set Default: StatMeanEstimator \033[0m\n";
   }
-} // End of constructor
+}
 
 template <typename PointT>
 void HeightMapping::fastHeightFilter(
@@ -60,20 +80,19 @@ void HeightMapping::fastHeightFilter(
 }
 
 template <typename PointT>
-void HeightMapping::updateHeights(
+void HeightMapping::update(
     const typename pcl::PointCloud<PointT>::Ptr &cloud,
     const Eigen::Affine3d &transform) {
 
-  // downsampling
+  // 1. downsampling
   auto downsampledCloud = boost::make_shared<pcl::PointCloud<PointT>>();
   height_map::pclProcessor::gridDownsampling<PointT>(downsampledCloud,
                                                      params_.gridResolution);
-
-  // transform
+  // 2. transform
   auto transformedCloud = boost::make_shared<pcl::PointCloud<PointT>>();
   pcl::transformPointCloud(*downsampledCloud, *transformedCloud, transform);
 
-  // estimate height
+  // 3. estimate height
   height_estimator_->estimate(map_, *transformedCloud);
 }
 
@@ -91,12 +110,12 @@ template void HeightMapping::fastHeightFilter<Laser>(
     const typename pcl::PointCloud<Laser>::Ptr &cloud,
     typename pcl::PointCloud<Laser>::Ptr &filtered_cloud);
 template void
-HeightMapping::updateHeights<Laser>(const pcl::PointCloud<Laser>::Ptr &cloud,
+HeightMapping::update<Laser>(const pcl::PointCloud<Laser>::Ptr &cloud,
                                     const Eigen::Affine3d &transform);
 // Color
 template void HeightMapping::fastHeightFilter<Color>(
     const typename pcl::PointCloud<Color>::Ptr &cloud,
     typename pcl::PointCloud<Color>::Ptr &filtered_cloud);
 template void
-HeightMapping::updateHeights<Color>(const pcl::PointCloud<Color>::Ptr &cloud,
+HeightMapping::update<Color>(const pcl::PointCloud<Color>::Ptr &cloud,
                                     const Eigen::Affine3d &transform);

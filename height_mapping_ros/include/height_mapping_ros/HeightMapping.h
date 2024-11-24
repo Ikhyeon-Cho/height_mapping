@@ -65,7 +65,7 @@ public:
   void fastHeightFilter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
                         typename pcl::PointCloud<PointT>::Ptr &filtered_cloud);
   template <typename PointT>
-  void updateHeights(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+  void update(const typename pcl::PointCloud<PointT>::Ptr &cloud,
                      const Eigen::Affine3d &transform);
 
   void updateMapOrigin(const grid_map::Position &position);
@@ -73,6 +73,10 @@ public:
   const grid_map::HeightMap &getHeightMap() const;
 
 private:
+  void paramValidityCheck();
+  void initHeightMap();
+  void initHeightEstimator();
+
   grid_map::HeightMap map_{10, 10, 0.1};
   Parameters params_;
 

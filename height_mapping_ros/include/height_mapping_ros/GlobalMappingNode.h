@@ -38,6 +38,12 @@ private:
   bool saveMapCallback(height_map_msgs::SaveLayerToImage::Request &req,
                        height_map_msgs::SaveLayerToImage::Response &res);
 
+  void
+  toPointCloud2(const grid_map::HeightMap &map,
+                const std::vector<std::string> &layers,
+                const std::unordered_set<grid_map::Index> &measured_indices,
+                sensor_msgs::PointCloud2 &cloud);
+
   // ROS members
   ros::NodeHandle nh_;                      // "/height_mapping/"
   ros::NodeHandle nhPriv_{"~"};             // "/height_mapping/global_mapping"

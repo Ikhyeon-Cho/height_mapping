@@ -9,29 +9,41 @@
 
 #include "height_mapping_ros/GlobalMapping.h"
 
-GlobalMapping::GlobalMapping(const Parameters &params) {
+GlobalMapping::GlobalMapping(const Parameters &params) : params_(params) {
 
-  globalmap_.setFrameId(params.mapFrame);
+  initGlobalMap();
+
+  initHeightEstimator();
+
+  measured_indices_.reserve(globalmap_.getSize().prod());
+
+  std::cout << "\033[1;32m[HeightMapping::GlobalMapping]: Waiting for Height "
+               "map... \033[0m\n";
+}
+
+void GlobalMapping::initGlobalMap() {
+
+  globalmap_.setFrameId(params_.mapFrame);
   globalmap_.setPosition(grid_map::Position(0.0, 0.0));
   // TODO: Decide if this is needed
   // globalmap_.setPosition(grid_map::Position(globalmap_.getLength().x() / 2,
   // globalmap_.getLength().y() / 2));
-  globalmap_.setGeometry(grid_map::Length(params.mapLengthX, params.mapLengthY),
-                         params.gridResolution);
+  globalmap_.setGeometry(
+      grid_map::Length(params_.mapLengthX, params_.mapLengthY),
+      params_.gridResolution);
+}
 
-  measured_indices_.reserve(globalmap_.getSize().prod());
+void GlobalMapping::initHeightEstimator() {
 
-  if (params.heightEstimatorType == "KalmanFilter") {
+  if (params_.heightEstimatorType == "KalmanFilter") {
     height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
-  } else if (params.heightEstimatorType == "MovingAverage") {
+  } else if (params_.heightEstimatorType == "MovingAverage") {
     height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
-  } else if (params.heightEstimatorType == "StatMean") {
+  } else if (params_.heightEstimatorType == "StatMean") {
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   } else {
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
-  std::cout << "\033[1;32m[HeightMapping::GlobalMapping]: Waiting for Height "
-               "map... \033[0m\n";
 }
 
 // Save measured indices for efficiency
@@ -147,92 +159,6 @@ bool GlobalMapping::saveMapToImage(const std::string &layer,
   // metadata.close();
 
   return true;
-}
-
-void GlobalMapping::toPointCloud2(
-    const grid_map::HeightMap &map, const std::vector<std::string> &layers,
-    const std::unordered_set<grid_map::Index> &measured_indices,
-    sensor_msgs::PointCloud2 &cloud) {
-
-  // Setup cloud header
-  cloud.header.frame_id = map.getFrameId();
-  cloud.header.stamp.fromNSec(map.getTimestamp());
-  cloud.is_dense = false;
-
-  // Setup field names and cloud structure
-  std::vector<std::string> fieldNames;
-  fieldNames.reserve(layers.size());
-
-  for (const auto &layer : layers) {
-    if (layer == map.getHeightLayer()) {
-      fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
-    } else if (layer == "color") {
-      fieldNames.push_back("rgb");
-    } else {
-      fieldNames.push_back(layer);
-    }
-  }
-
-  // Setup point field structure
-  cloud.fields.clear();
-  cloud.fields.reserve(fieldNames.size());
-  int offset = 0;
-
-  for (const auto &name : fieldNames) {
-    sensor_msgs::PointField field;
-    field.name = name;
-    field.count = 1;
-    field.datatype = sensor_msgs::PointField::FLOAT32;
-    field.offset = offset;
-    cloud.fields.push_back(field);
-    offset += sizeof(float); // 4 bytes for FLOAT32
-  }
-
-  // Initialize cloud size based on measured points
-  const size_t num_points = measured_indices.size();
-  cloud.height = 1;
-  cloud.width = num_points;
-  cloud.point_step = offset;
-  cloud.row_step = cloud.width * cloud.point_step;
-  cloud.data.resize(cloud.height * cloud.row_step);
-
-  // Setup point field iterators
-  std::unordered_map<std::string, sensor_msgs::PointCloud2Iterator<float>>
-      iterators;
-  for (const auto &name : fieldNames) {
-    iterators.emplace(name,
-                      sensor_msgs::PointCloud2Iterator<float>(cloud, name));
-  }
-
-  // Fill point cloud data
-  size_t valid_points = 0;
-  for (const auto &index : measured_indices) {
-    grid_map::Position3 position;
-    if (!map.getPosition3(map.getHeightLayer(), index, position)) {
-      continue;
-    }
-
-    // Update each field
-    for (auto &[field_name, iterator] : iterators) {
-      if (field_name == "x")
-        *iterator = static_cast<float>(position.x());
-      else if (field_name == "y")
-        *iterator = static_cast<float>(position.y());
-      else if (field_name == "z")
-        *iterator = static_cast<float>(position.z());
-      else if (field_name == "rgb")
-        *iterator = static_cast<float>(map.at("color", index));
-      else
-        *iterator = static_cast<float>(map.at(field_name, index));
-      ++iterator;
-    }
-    ++valid_points;
-  }
-
-  // Adjust final cloud size to actual valid points
-  cloud.width = valid_points;
-  cloud.row_step = cloud.width * cloud.point_step;
-  cloud.data.resize(cloud.height * cloud.row_step);
 }
 
 //////////////////////////////////////////////////

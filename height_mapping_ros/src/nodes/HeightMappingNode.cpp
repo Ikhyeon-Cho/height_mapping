@@ -123,8 +123,8 @@ void HeightMappingNode::laserCloudCallback(
     pubLaserProcessed_.publish(processedCloudMsg);
   }
   // Mapping
-  heightMapping_->updateHeights<Laser>(
-      processedCloud, utils::tf::toAffine3d(baselink2Map.transform));
+  heightMapping_->update<Laser>(processedCloud,
+                                utils::tf::toAffine3d(baselink2Map.transform));
 }
 
 void HeightMappingNode::rgbCloudCallback(
@@ -162,8 +162,8 @@ void HeightMappingNode::rgbCloudCallback(
     pubRGBProcessed_.publish(processedCloudMsg);
   }
   // Mapping
-  heightMapping_->updateHeights<Color>(
-      processedCloud, utils::tf::toAffine3d(baselink2Map.transform));
+  heightMapping_->update<Color>(processedCloud,
+                                utils::tf::toAffine3d(baselink2Map.transform));
 }
 
 void HeightMappingNode::updateRobotPose(const ros::TimerEvent &event) {
