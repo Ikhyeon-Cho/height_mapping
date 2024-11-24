@@ -7,92 +7,75 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#ifndef HEIGHT_MAPPING_H
-#define HEIGHT_MAPPING_H
-
-#include <ros/ros.h>
+#pragma once
 
 // Utility
-#include "ros_utils/TransformHandler.h"
-#include "ros_utils/pointcloud.h"
-
-// Msgs
-#include <sensor_msgs/PointCloud2.h>
-#include <grid_map_ros/GridMapRosConverter.hpp>
-#include <pcl_conversions/pcl_conversions.h>
+#include "utils/TransformHandler.h"
+#include "utils/pointcloud.h"
 
 // Height Map
 #include <height_map_core/height_map_core.h>
 #include <height_map_msgs/HeightMapMsgs.h>
 #include <height_map_pcl/pclProcessor.h>
 
-#include <jsk_rviz_plugins/OverlayText.h>
+// Point types
+#include "PointTypes.h"
 
-using Laser = pcl::PointXYZI;
-using Color = pcl::PointXYZRGB;
-
-class HeightMapping
-{
+class FastHeightFilter {
 public:
-  HeightMapping();
+  FastHeightFilter(float min_z, float max_z) : min_z_(min_z), max_z_(max_z) {}
 
-  void updateFromLaserCloud(const sensor_msgs::PointCloud2ConstPtr& msg);
+  template <typename PointT>
+  void filter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+              typename pcl::PointCloud<PointT>::Ptr &filtered_cloud) {
+    filtered_cloud->points.clear();
+    filtered_cloud->points.reserve(cloud->points.size());
 
-  void updateFromRGBCloud(const sensor_msgs::PointCloud2ConstPtr& msg);
+    for (const auto &point : cloud->points) {
+      if (point.z >= min_z_ && point.z <= max_z_) {
+        filtered_cloud->points.push_back(point);
+      }
+    }
 
-  void updatePosition(const ros::TimerEvent& event);
-
-  void publishHeightmap(const ros::TimerEvent& event);
-
-private:
-  ros::NodeHandle nh_priv_{ "~" };
-  utils::TransformHandler tf_;
-
-  // Topics
-  std::string lidarcloud_topic_{ nh_priv_.param<std::string>("lidarCloudTopic",
-                                                             "/height_mapping/sensor/laser/points") };
-  std::string rgbcloud_topic_{ nh_priv_.param<std::string>("rgbCloudTopic",
-                                                           "/height_mapping/sensor/color/points") };
-
-  // Frame Ids
-  std::string baselink_frame{ nh_priv_.param<std::string>("/frame_id/base_link", "base_link") };
-  std::string odom_frame{ nh_priv_.param<std::string>("/frame_id/odom", "odom") };
-  std::string map_frame{ nh_priv_.param<std::string>("/frame_id/map", "map") };
-
-  // Height Map Parameters
-  double grid_resolution_{ nh_priv_.param<double>("gridResolution", 0.1) };
-  double map_length_x_{ nh_priv_.param<double>("mapLengthX", 10) };
-  double map_length_y_{ nh_priv_.param<double>("mapLengthY", 10) };
-  std::string height_estimator_type_{ nh_priv_.param<std::string>("heightEstimatorType", "StatMean") };
-  double height_min_thrsh_{ nh_priv_.param<double>("minHeightThreshold", -0.5) };
-  double height_max_thrsh_{ nh_priv_.param<double>("maxHeightThreshold", 1.5) };
-
-  // Timer
-  double pose_update_rate_{ nh_priv_.param<double>("poseUpdateRate", 20) };
-  double heightmap_pub_rate_{ nh_priv_.param<double>("mapPublishRate", 10) };
-
-  // ROS
-  ros::Subscriber sub_lidar_{ nh_priv_.subscribe(lidarcloud_topic_, 1, &HeightMapping::updateFromLaserCloud, this) };
-  ros::Subscriber sub_rgbd_{ nh_priv_.subscribe(rgbcloud_topic_, 1, &HeightMapping::updateFromRGBCloud, this) };
-  ros::Publisher pub_heightmap_{ nh_priv_.advertise<grid_map_msgs::GridMap>("/height_mapping/map/gridmap", 1) };
-
-  // Debug Flag
-  bool debug_{ nh_priv_.param<bool>("debugMode", false) };
-  ros::Publisher pub_laser_downsampled_;
-  ros::Publisher pub_rgbd_downsampled_;
-  ros::Publisher pub_laser_processing_time_;
-  ros::Publisher pub_rgbd_processing_time_;
-
-  ros::Timer robot_pose_update_timer_{ nh_priv_.createTimer(pose_update_rate_, &HeightMapping::updatePosition, this,
-                                                            false, false) };  // oneshot = false, autostart = false
-  ros::Timer pub_heightmap_timer_{ nh_priv_.createTimer(heightmap_pub_rate_, &HeightMapping::publishHeightmap, this) };
+    filtered_cloud->width = filtered_cloud->points.size();
+    filtered_cloud->height = 1;
+    filtered_cloud->is_dense = cloud->is_dense;
+  }
 
 private:
-  grid_map::HeightMap map_{ map_length_x_, map_length_y_, grid_resolution_ };
-  height_map::HeightEstimatorBase::Ptr height_estimator_;
-
-  bool lasercloud_received_{ false };
-  bool rgbcloud_received_{ false };
+  float min_z_, max_z_;
 };
 
-#endif  // HEIGHT_MAPPING_H
+class HeightMapping {
+public:
+  struct Parameters {
+    // Height mapping parameters
+    std::string heightEstimatorType;
+    std::string mapFrame;
+    double mapLengthX;
+    double mapLengthY;
+    double gridResolution;
+    float minHeight;
+    float maxHeight;
+  };
+
+  HeightMapping(const Parameters &params);
+
+  template <typename PointT>
+  void fastHeightFilter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+                        typename pcl::PointCloud<PointT>::Ptr &filtered_cloud);
+  template <typename PointT>
+  void updateHeights(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+                     const Eigen::Affine3d &transform);
+
+  void updateMapOrigin(const grid_map::Position &position);
+
+  const grid_map::HeightMap &getHeightMap() const;
+
+private:
+  grid_map::HeightMap map_{10, 10, 0.1};
+  Parameters params_;
+
+  FastHeightFilter heightFilter_;
+  height_map::HeightEstimatorBase::Ptr height_estimator_;
+};

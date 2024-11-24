@@ -35,7 +35,7 @@ public:
 
   template <typename PointT>
   static typename pcl::PointCloud<PointT>::Ptr gridDownsampling(const typename pcl::PointCloud<PointT>::Ptr& cloud,
-                                                                  float gridSize)
+                                                                float gridSize)
   {
     // Check if the cloud is valid
     if (isEmpty(*cloud))

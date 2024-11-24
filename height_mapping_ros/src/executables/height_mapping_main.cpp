@@ -12,11 +12,8 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "height_mapping");
-  ros::NodeHandle nh;
-  ros::NodeHandle pnh("~");
-
-  HeightMappingNode node(nh, pnh);
+  ros::init(argc, argv, "height_mapping_node");  // launch file overrides this
+  HeightMappingNode node;
 
   ros::spin();
 

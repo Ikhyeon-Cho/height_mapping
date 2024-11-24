@@ -1,29 +1,41 @@
+<!-- 
+  Launch file for height mapping
+  - Nodes for local/global mapping
+
+  Parameters:
+  - Use global_mapping:=true to enable global mapping mode
+  - Use debug_mode:=true to publish debug information
+-->
 <launch>
   <arg name="global_mapping" default="false" />
   <arg name="debug_mode" default="false" />
-  <!-- Height Mapping -->
-  <group ns="height_mapping">
 
-    <!-- ROS Parameters  -->
+  <group ns="height_mapping">
+    <!-- Load parameters -->
     <rosparam file="$(find height_mapping)/config/params.yaml" command="load" subst_value="true" />
 
-    <!-- Sensor Processing node-->
+    <!-- Sensor Processing node -->
     <include file="$(find height_mapping)/launch/include/sensor_processor.launch.xml" />
 
     <!-- Mapping node -->
     <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
+      <param name="robotPoseUpdateRate" value="15.0" />
+      <param name="mapPublishRate" value="15.0" />
       <param name="debugMode" value="$(arg debug_mode)" />
     </node>
 
-    <!-- Map Visualization node -->
-    <node pkg="grid_map_visualization" type="grid_map_visualization" name="map_visualization" output="log">
+    <!-- Use grid_map_visualization package for map visualization -->
+    <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="log">
       <rosparam file="$(find height_mapping)/config/visualization.yaml" />
       <param name="debugMode" value="$(arg debug_mode)" />
     </node>
 
-    <!-- Global Mapping node -->
-    <include if="$(arg global_mapping)" file="$(find height_mapping)/launch/include/global_mapping.launch.xml" />
-
+    <!-- Global mapping node -->
+    <group if="$(arg global_mapping)">
+      <node pkg="height_mapping" type="global_mapping_node" name="global_mapping" output="screen">
+        <param name="mapPublishRate" value="1.0" />
+      </node>
+    </group>
   </group>
 
 </launch>

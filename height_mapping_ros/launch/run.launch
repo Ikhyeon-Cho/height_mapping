@@ -1,12 +1,24 @@
+<!-- 
+  Run mapping.launch with Rviz visualization
+  - Launches appropriate Rviz configuration based on mapping mode
+
+  Parameters:
+  - Use global_mapping:=true to enable global mapping mode
+  - Use debug_mode:=true to publish debug information
+-->
 <launch>
   <arg name="global_mapping" default="false" />
+  <arg name="debug_mode" default="false" />
 
+  <!-- Height mapping-->
   <include file="$(find height_mapping)/launch/mapping.launch" >
     <arg name="global_mapping" value="$(arg global_mapping)" />
+    <arg name="debug_mode" value="$(arg debug_mode)" />
   </include>
 
   <!-- Rviz -->
-  <include if="$(arg global_mapping)" file="$(find height_mapping)/launch/include/rviz_global.launch.xml" />
-  <include unless="$(arg global_mapping)" file="$(find height_mapping)/launch/include/rviz.launch.xml" />
+  <include file="$(find height_mapping)/launch/include/rviz.launch.xml" >
+    <arg name="global_mapping" value="$(arg global_mapping)" />
+  </include>
 
 </launch>

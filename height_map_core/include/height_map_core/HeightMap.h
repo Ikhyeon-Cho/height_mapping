@@ -11,6 +11,7 @@
 #define HEIGHT_MAP_H
 
 #include <grid_map_core/grid_map_core.hpp>
+#include <memory>
 #include <iostream>
 
 namespace grid_map
@@ -22,8 +23,8 @@ public:
 
   HeightMap(double length_x, double length_y, double grid_resolution);
 
-  /// @brief 
-  /// @return 
+  /// @brief
+  /// @return
   bool hasHeightValue() const;
 
   void addLayer(const std::string& layer, float default_value = NAN);

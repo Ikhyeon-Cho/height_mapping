@@ -1,56 +1,74 @@
-#ifndef HEIGHT_MAPPING_NODE_H
-#define HEIGHT_MAPPING_NODE_H
+/*
+ * HeightMappingNode.h
+ *
+ *  Created on: Nov 24, 2024
+ *      Author: Ikhyeon Cho
+ *	 Institute: Korea Univ. ISR (Intelligent Systems & Robotics) Lab
+ *       Email: tre0430@korea.ac.kr
+ */
 
+#pragma once
+
+#include <grid_map_ros/GridMapRosConverter.hpp>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
-#include <grid_map_msgs/GridMap.h>
-#include <jsk_rviz_plugins/OverlayText.h>
 #include <sensor_msgs/PointCloud2.h>
 
 #include "height_mapping_ros/HeightMapping.h"
-#include "ros_utils/TransformHandler.h"
+#include "utils/TransformHandler.h"
 
-class HeightMappingNode
-{
+class HeightMappingNode {
 public:
-  HeightMappingNode(ros::NodeHandle& nh, ros::NodeHandle& pnh);
+  HeightMappingNode();
   ~HeightMappingNode() = default;
 
 private:
-  void laserCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
-  void rgbCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
-  void updatePositionCallback(const ros::TimerEvent& event);
-  void publishMapCallback(const ros::TimerEvent& event);
+  void getNodeParameters();
+  void getFrameIDs();
+  void setTimers();
+  HeightMapping::Parameters getHeightMappingParameters();
   void setupROSInterface();
 
+  void laserCloudCallback(const sensor_msgs::PointCloud2Ptr &msg);
+  void rgbCloudCallback(const sensor_msgs::PointCloud2Ptr &msg);
+  void updateRobotPose(const ros::TimerEvent &event);
+  void publishMap(const ros::TimerEvent &event);
+
   // ROS members
-  ros::NodeHandle& nh_;
-  ros::NodeHandle& pnh_;
-  utils::TransformHandler tf_handler_;
+  ros::NodeHandle nh_;                         // "/height_mapping/"
+  ros::NodeHandle nhPriv_{"~"};                // "/height_mapping/{node_name}"
+  ros::NodeHandle nhMap_{nh_, "map"};          // "/height_mapping/map/"
+  ros::NodeHandle nhFrameID_{nh_, "frame_id"}; // "/height_mapping/frame_id/"
+
+  // Frame IDs
+  std::string mapFrame_;
+  std::string baselinkFrame_;
 
   // Subscribers
-  ros::Subscriber sub_laser_cloud_;
-  ros::Subscriber sub_rgb_cloud_;
+  ros::Subscriber subLaserCloud_;
+  ros::Subscriber subRGBCloud_;
 
   // Publishers
-  ros::Publisher pub_height_map_;
-  ros::Publisher pub_laser_downsampled_;
-  ros::Publisher pub_rgb_downsampled_;
-  ros::Publisher pub_laser_processing_time_;
-  ros::Publisher pub_rgb_processing_time_;
+  ros::Publisher pubHeightMap_;
+  ros::Publisher pubLaserProcessed_;
+  ros::Publisher pubRGBProcessed_;
 
   // Timers
-  ros::Timer position_update_timer_;
-  ros::Timer map_publish_timer_;
+  ros::Timer robotPoseUpdateTimer_;
+  ros::Timer mapPublishTimer_;
 
   // Core height mapping implementation
-  std::unique_ptr<HeightMapping> height_mapping_;
+  std::unique_ptr<HeightMapping> heightMapping_;
+  utils::TransformHandler tf_;
 
   // Parameters
-  std::string lidar_topic_;
-  std::string rgb_topic_;
-  double pose_update_rate_;
-  double map_publish_rate_;
-  bool debug_mode_;
-};
+  std::string subLaserTopic_;
+  std::string subRGBTopic_;
+  double robotPoseUpdateRate_;
+  double mapPublishRate_;
+  bool debugMode_;
 
-#endif  // HEIGHT_MAPPING_ROS_H
+  // State variables
+  bool laserReceived_{false};
+  bool rgbReceived_{false};
+};

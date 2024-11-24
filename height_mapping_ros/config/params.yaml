@@ -1,8 +1,10 @@
+# -> Parameters for /height_mapping/frame_id/...
 frame_id:
   base_link: "base_link"
   odom: "odom"
   map: "map"
 
+# -> Parameters for /height_mapping/sensor_processor/...
 sensor_processor:
   pointType: "color" # color: rgb cloud, laser: intensity cloud
   inputCloudTopic1: "/zed2/pointcloud/points"
@@ -23,7 +25,8 @@ sensor_processor:
 
   cloudPublishRate: 10
 
-height_mapping:
+# -> Parameters for /height_mapping/map/...
+map:  
   gridResolution: 0.05 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
   mapLengthX: 10.0
   mapLengthY: 10.0
@@ -31,6 +34,10 @@ height_mapping:
   minHeightThreshold: -0.2 # indoor: -0.05, outdoor: -0.2 [meter]
   maxHeightThreshold: 1.0
 
-  # Process
-  poseUpdateRate: 15
-  mapPublishRate: 15
+globalmap:
+  heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
+  gridResolution: 0.1
+  mapLengthX: 400
+  mapLengthY: 400
+  mapPublishRate: 10.0
+  mapSaveDir: "$(find height_mapping)/map_image"

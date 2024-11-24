@@ -1,4 +1,0 @@
-<launch>
-  <node pkg="rviz" type="rviz" name="rviz_global_mapping"
-    args="-d $(find height_mapping)/launch/rviz/global_mapping.rviz" />
-</launch>

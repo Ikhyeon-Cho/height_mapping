@@ -3,6 +3,7 @@ project(height_mapping)
 add_compile_options(-std=c++17)
 
 find_package(PCL REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     tf2_ros
@@ -11,8 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
     height_map_msgs
     height_map_pcl
 )
-find_package(yaml-cpp REQUIRED)
-
 catkin_package(
   INCLUDE_DIRS 
     include
@@ -60,6 +59,7 @@ target_link_libraries(height_mapping_node
 # Global mapping node
 add_executable(global_mapping_node 
   src/executables/global_mapping_main.cpp
+  src/nodes/GlobalMappingNode.cpp
   src/GlobalMapping.cpp
 )
 target_link_libraries(global_mapping_node
