@@ -17,6 +17,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include "height_mapping_ros/CloudTypes.h"
 #include "height_mapping_ros/GlobalMapping.h"
 
 class GlobalMappingNode {
@@ -31,7 +32,8 @@ private:
   void setupROSInterface();
   GlobalMapping::Parameters getGlobalMappingParameters();
 
-  void localMapCallback(const sensor_msgs::PointCloud2Ptr &msg);
+  void laserCloudCallback(const sensor_msgs::PointCloud2Ptr &msg);
+  void rgbCloudCallback(const sensor_msgs::PointCloud2Ptr &msg);
   void publishMap(const ros::TimerEvent &event);
   bool clearMapCallback(std_srvs::Empty::Request &req,
                         std_srvs::Empty::Response &res);
@@ -51,7 +53,8 @@ private:
   ros::NodeHandle nhFrameID_{nh_, "frame_id"}; // "/height_mapping/frame_id/"
 
   // Subscribers
-  ros::Subscriber subLocalMap_;
+  ros::Subscriber subLaserCloud_;
+  ros::Subscriber subRGBCloud_;
 
   // Publishers
   ros::Publisher pubGlobalMap_;
@@ -76,5 +79,6 @@ private:
   std::unique_ptr<GlobalMapping> globalMapping_;
 
   // State variables
-  bool localMapReceived_{false};
+  bool laserReceived_{false};
+  bool rgbReceived_{false};
 };

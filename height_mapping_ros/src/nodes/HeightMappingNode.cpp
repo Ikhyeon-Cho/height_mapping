@@ -31,6 +31,12 @@ void HeightMappingNode::getNodeParameters() {
   debugMode_ = nhPriv_.param<bool>("debugMode", false);
 }
 
+void HeightMappingNode::getFrameIDs() {
+
+  baselinkFrame_ = nhFrameID_.param<std::string>("base_link", "base_link");
+  mapFrame_ = nhFrameID_.param<std::string>("map", "map");
+}
+
 void HeightMappingNode::setTimers() {
 
   robotPoseUpdateTimer_ = nhPriv_.createTimer(
@@ -40,26 +46,6 @@ void HeightMappingNode::setTimers() {
   mapPublishTimer_ =
       nhPriv_.createTimer(ros::Duration(1.0 / mapPublishRate_),
                           &HeightMappingNode::publishMap, this, false, false);
-}
-
-void HeightMappingNode::getFrameIDs() {
-
-  baselinkFrame_ = nhFrameID_.param<std::string>("base_link", "base_link");
-  mapFrame_ = nhFrameID_.param<std::string>("map", "map");
-}
-
-HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
-
-  HeightMapping::Parameters params;
-  params.mapFrame = mapFrame_;
-  params.mapLengthX = nhMap_.param<double>("mapLengthX", 10.0);
-  params.mapLengthY = nhMap_.param<double>("mapLengthY", 10.0);
-  params.gridResolution = nhMap_.param<double>("gridResolution", 0.1);
-  params.heightEstimatorType =
-      nhMap_.param<std::string>("heightEstimatorType", "StatMean");
-  params.minHeight = nhMap_.param<double>("minHeightThreshold", 0.0);
-  params.maxHeight = nhMap_.param<double>("maxHeightThreshold", 1.0);
-  return params;
 }
 
 void HeightMappingNode::setupROSInterface() {
@@ -90,6 +76,20 @@ void HeightMappingNode::setupROSInterface() {
     pubDebugRGBCloud_ = nh_.advertise<sensor_msgs::PointCloud2>(
         "/height_mapping/debug/rgbdcloud", 1);
   }
+}
+
+HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
+
+  HeightMapping::Parameters params;
+  params.mapFrame = mapFrame_;
+  params.mapLengthX = nhMap_.param<double>("mapLengthX", 10.0);
+  params.mapLengthY = nhMap_.param<double>("mapLengthY", 10.0);
+  params.gridResolution = nhMap_.param<double>("gridResolution", 0.1);
+  params.heightEstimatorType =
+      nhMap_.param<std::string>("heightEstimatorType", "StatMean");
+  params.minHeight = nhMap_.param<double>("minHeightThreshold", 0.0);
+  params.maxHeight = nhMap_.param<double>("maxHeightThreshold", 1.0);
+  return params;
 }
 
 void HeightMappingNode::laserCloudCallback(

@@ -21,9 +21,6 @@ GlobalMappingNode::GlobalMappingNode() {
 
   globalMapping_ =
       std::make_unique<GlobalMapping>(getGlobalMappingParameters());
-
-  std::cout << "\033[1;32m[HeightMapping::GlobalMapping]: Waiting for Height "
-               "map... \033[0m\n";
 }
 
 void GlobalMappingNode::getNodeParameters() {
@@ -43,8 +40,10 @@ void GlobalMappingNode::setTimers() {
 
 void GlobalMappingNode::setupROSInterface() {
   // Subscribers
-  subLocalMap_ = nh_.subscribe("/height_mapping/map/pointcloud", 1,
-                               &GlobalMappingNode::localMapCallback, this);
+  subLaserCloud_ = nh_.subscribe("/height_mapping/mapping/lasercloud", 1,
+                                 &GlobalMappingNode::laserCloudCallback, this);
+  subRGBCloud_ = nh_.subscribe("/height_mapping/mapping/rgbdcloud", 1,
+                               &GlobalMappingNode::rgbCloudCallback, this);
 
   // Publishers
   pubGlobalMap_ = nh_.advertise<sensor_msgs::PointCloud2>(
@@ -76,20 +75,36 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
   return params;
 }
 
-void GlobalMappingNode::localMapCallback(
+void GlobalMappingNode::laserCloudCallback(
     const sensor_msgs::PointCloud2Ptr &msg) {
 
-  if (!localMapReceived_) {
-    localMapReceived_ = true;
+  if (!laserReceived_) {
+    laserReceived_ = true;
     mapPublishTimer_.start();
     std::cout
-        << "\033[1;32m[GlobalMapping::GlobalMapping]: Local map received! "
-        << "Use local map for global mapping... \033[0m\n";
+        << "\033[1;32m[HeightMapping::GlobalMapping]: Laser cloud received! "
+        << "Start global mapping... \033[0m\n";
   }
 
-  // TODO: Define point cloud type: local map or cloud?
-  pcl::PointCloud<pcl::PointXYZ> cloud;
+  pcl::PointCloud<Laser> cloud;
   pcl::moveFromROSMsg(*msg, cloud);
+  globalMapping_->mapping(cloud);
+}
+
+void GlobalMappingNode::rgbCloudCallback(
+    const sensor_msgs::PointCloud2Ptr &msg) {
+
+  if (!rgbReceived_) {
+    rgbReceived_ = true;
+    mapPublishTimer_.start();
+    std::cout
+        << "\033[1;32m[HeightMapping::GlobalMapping]: Colored cloud received! "
+        << "Start global mapping... \033[0m\n";
+  }
+
+  pcl::PointCloud<Color> cloud;
+  pcl::moveFromROSMsg(*msg, cloud);
+  globalMapping_->mapping(cloud);
 }
 
 void GlobalMappingNode::publishMap(const ros::TimerEvent &) {

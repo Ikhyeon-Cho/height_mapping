@@ -50,12 +50,7 @@ public:
 
   GlobalMapping(const Parameters &params);
 
-  void updateFromLocalMap(const sensor_msgs::PointCloud2ConstPtr &msg) {
-    // pcl::fromROSMsg(*msg, *heightmap_cloud_);
-    // updateMeasuredGridIndices(globalmap_, *heightmap_cloud_);
-
-    // height_estimator_->estimate(globalmap_, *heightmap_cloud_);
-  }
+  template <typename PointT> void mapping(const pcl::PointCloud<PointT> &cloud);
 
   bool clearMap();
 
@@ -76,7 +71,7 @@ private:
   void initHeightEstimator();
   template <typename PointT>
   void updateMeasuredGridIndices(const grid_map::HeightMap &map,
-                              const pcl::PointCloud<PointT> &cloud);
+                                 const pcl::PointCloud<PointT> &cloud);
   grid_map::HeightMap globalmap_{400, 400, 0.1};
   Parameters params_;
 

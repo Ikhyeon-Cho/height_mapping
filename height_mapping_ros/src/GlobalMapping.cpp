@@ -42,6 +42,11 @@ void GlobalMapping::initHeightEstimator() {
     height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
   }
 }
+template <typename PointT>
+void GlobalMapping::mapping(const pcl::PointCloud<PointT> &cloud) {
+  updateMeasuredGridIndices<PointT>(globalmap_, cloud);
+  height_estimator_->estimate(globalmap_, cloud);
+}
 
 // Save measured indices for efficiency
 template <typename PointT>
@@ -163,10 +168,14 @@ bool GlobalMapping::saveMapToImage(const std::string &layer,
 //////////////////////////////////////////////////
 // Laser
 template void
+GlobalMapping::mapping<Laser>(const pcl::PointCloud<Laser> &cloud);
+template void
 GlobalMapping::updateMeasuredGridIndices(const grid_map::HeightMap &map,
                                          const pcl::PointCloud<Laser> &cloud);
 
 // Color
+template void
+GlobalMapping::mapping<Color>(const pcl::PointCloud<Color> &cloud);
 template void
 GlobalMapping::updateMeasuredGridIndices(const grid_map::HeightMap &map,
                                          const pcl::PointCloud<Color> &cloud);
