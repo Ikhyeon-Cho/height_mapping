@@ -8,9 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     tf2_ros
     pcl_conversions
-    height_map_core
-    height_map_msgs
-    height_map_pcl
+    height_mapping_core
+    height_mapping_msgs
 )
 catkin_package(
   INCLUDE_DIRS 
@@ -19,9 +18,8 @@ catkin_package(
     roscpp
     tf2_ros
     pcl_conversions
-    height_map_core
-    height_map_msgs
-    height_map_pcl
+    height_mapping_core
+    height_mapping_msgs
 )
 
 ###########

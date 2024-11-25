@@ -54,10 +54,10 @@ void GlobalMappingNode::setupROSInterface() {
   // Services
   if (debugMode_) {
     srvClearMap_ =
-        nh_.advertiseService("/height_mapping/global/clear_map",
+        nh_.advertiseService("/height_mapping/globalmap/clear_map",
                              &GlobalMappingNode::clearMapCallback, this);
     srvSaveMap_ =
-        nh_.advertiseService("/height_mapping/global/save_to_image",
+        nh_.advertiseService("/height_mapping/globalmap/save_to_image",
                              &GlobalMappingNode::saveMapCallback, this);
   }
 }
@@ -68,10 +68,10 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
   params.mapFrame = mapFrame_;
   params.heightEstimatorType =
       nhMap_.param<std::string>("heightEstimatorType", "StatMean");
-  params.gridResolution = nhMap_.param<double>("gridResolution", 0.1);
-  params.mapLengthX = nhMap_.param<double>("mapLengthX", 400.0);
-  params.mapLengthY = nhMap_.param<double>("mapLengthY", 400.0);
-  params.mapSaveDir = nhMap_.param<std::string>("mapSaveDir", "");
+  params.gridResolution = nhGlobalMap_.param<double>("gridResolution", 0.1);
+  params.mapLengthX = nhGlobalMap_.param<double>("mapLengthX", 400.0);
+  params.mapLengthY = nhGlobalMap_.param<double>("mapLengthY", 400.0);
+  params.mapSaveDir = nhGlobalMap_.param<std::string>("mapSaveDir", "");
   return params;
 }
 
@@ -85,7 +85,6 @@ void GlobalMappingNode::laserCloudCallback(
         << "\033[1;32m[HeightMapping::GlobalMapping]: Laser cloud received! "
         << "Start global mapping... \033[0m\n";
   }
-
   pcl::PointCloud<Laser> cloud;
   pcl::moveFromROSMsg(*msg, cloud);
   globalMapping_->mapping(cloud);
@@ -101,7 +100,6 @@ void GlobalMappingNode::rgbCloudCallback(
         << "\033[1;32m[HeightMapping::GlobalMapping]: Colored cloud received! "
         << "Start global mapping... \033[0m\n";
   }
-
   pcl::PointCloud<Color> cloud;
   pcl::moveFromROSMsg(*msg, cloud);
   globalMapping_->mapping(cloud);
@@ -110,7 +108,7 @@ void GlobalMappingNode::rgbCloudCallback(
 void GlobalMappingNode::publishMap(const ros::TimerEvent &) {
 
   sensor_msgs::PointCloud2 cloud_msg;
-  std::vector<std::string> layers = {"elevation"};
+  std::vector<std::string> layers = globalMapping_->getHeightMap().getLayers();
 
   toPointCloud2(globalMapping_->getHeightMap(), layers,
                 globalMapping_->getMeasuredIndices(), cloud_msg);
@@ -142,8 +140,10 @@ void GlobalMappingNode::toPointCloud2(
       fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
     } else if (layer == "color") {
       fieldNames.push_back("rgb");
+    } else if (layer == "intensity") {
+      fieldNames.push_back("intensity");
     } else {
-      fieldNames.push_back(layer);
+      continue;
     }
   }
 
@@ -215,7 +215,7 @@ bool GlobalMappingNode::clearMapCallback(std_srvs::Empty::Request &req,
 }
 
 bool GlobalMappingNode::saveMapCallback(
-    height_map_msgs::SaveLayerToImage::Request &req,
-    height_map_msgs::SaveLayerToImage::Response &res) {
+    height_mapping_msgs::SaveLayerToImage::Request &req,
+    height_mapping_msgs::SaveLayerToImage::Response &res) {
   return globalMapping_->saveLayerToImage(req, res);
 }

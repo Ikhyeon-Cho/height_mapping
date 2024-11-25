@@ -12,8 +12,8 @@
   <depend>pcl_conversions</depend>
   <depend>grid_map_core</depend>
   <depend>grid_map_msgs</depend>
-  <depend>height_map_core</depend>
-  <depend>height_map_msgs</depend>
+  <depend>height_mapping_core</depend>
+  <depend>height_mapping_msgs</depend>
   <depend>height_map_pcl</depend>
   <export>
   </export>

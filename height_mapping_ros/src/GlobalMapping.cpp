@@ -22,9 +22,6 @@ void GlobalMapping::initGlobalMap() {
 
   globalmap_.setFrameId(params_.mapFrame);
   globalmap_.setPosition(grid_map::Position(0.0, 0.0));
-  // TODO: Decide if this is needed
-  // globalmap_.setPosition(grid_map::Position(globalmap_.getLength().x() / 2,
-  // globalmap_.getLength().y() / 2));
   globalmap_.setGeometry(
       grid_map::Length(params_.mapLengthX, params_.mapLengthY),
       params_.gridResolution);
@@ -44,6 +41,7 @@ void GlobalMapping::initHeightEstimator() {
 }
 template <typename PointT>
 void GlobalMapping::mapping(const pcl::PointCloud<PointT> &cloud) {
+
   updateMeasuredGridIndices<PointT>(globalmap_, cloud);
   height_estimator_->estimate(globalmap_, cloud);
 }
@@ -75,8 +73,8 @@ bool GlobalMapping::clearMap() {
 }
 
 bool GlobalMapping::saveLayerToImage(
-    height_map_msgs::SaveLayerToImage::Request &req,
-    height_map_msgs::SaveLayerToImage::Response &res) {
+    height_mapping_msgs::SaveLayerToImage::Request &req,
+    height_mapping_msgs::SaveLayerToImage::Response &res) {
   // Srv input
   auto img_path = std::filesystem::path(params_.mapSaveDir) / req.map_name;
   const auto &layer = req.layer_name;

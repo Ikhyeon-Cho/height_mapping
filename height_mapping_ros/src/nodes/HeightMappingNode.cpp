@@ -21,6 +21,10 @@ HeightMappingNode::HeightMappingNode() {
 
   heightMapping_ =
       std::make_unique<HeightMapping>(getHeightMappingParameters());
+
+  std::cout << "\033[1;33m[HeightMapping::HeightMapping]: "
+               "Height mapping node initialized. Waiting for scan inputs... "
+               "\033[0m\n";
 }
 
 void HeightMappingNode::getNodeParameters() {

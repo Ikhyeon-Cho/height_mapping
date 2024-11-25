@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include <height_map_core/height_map_core.h>
-#include <height_map_msgs/HeightMapConverter.h>
-#include <height_map_msgs/HeightMapMsgs.h>
+#include <height_mapping_core/height_mapping_core.h>
+#include <height_mapping_msgs/HeightMapConverter.h>
+#include <height_mapping_msgs/HeightMapMsgs.h>
 
 #include <filesystem>
 #include <opencv2/opencv.hpp>
@@ -54,8 +54,8 @@ public:
 
   bool clearMap();
 
-  bool saveLayerToImage(height_map_msgs::SaveLayerToImage::Request &request,
-                        height_map_msgs::SaveLayerToImage::Response &response);
+  bool saveLayerToImage(height_mapping_msgs::SaveLayerToImage::Request &request,
+                        height_mapping_msgs::SaveLayerToImage::Response &response);
   bool saveMapToImage(const std::string &layer, const std::string &file_path);
 
   // bool saveAsPcd(std_srvs::Empty::Request& request,

@@ -37,8 +37,8 @@ private:
   void publishMap(const ros::TimerEvent &event);
   bool clearMapCallback(std_srvs::Empty::Request &req,
                         std_srvs::Empty::Response &res);
-  bool saveMapCallback(height_map_msgs::SaveLayerToImage::Request &req,
-                       height_map_msgs::SaveLayerToImage::Response &res);
+  bool saveMapCallback(height_mapping_msgs::SaveLayerToImage::Request &req,
+                       height_mapping_msgs::SaveLayerToImage::Response &res);
 
   void
   toPointCloud2(const grid_map::HeightMap &map,
@@ -47,9 +47,11 @@ private:
                 sensor_msgs::PointCloud2 &cloud);
 
   // ROS members
-  ros::NodeHandle nh_;                      // "/height_mapping/"
-  ros::NodeHandle nhPriv_{"~"};             // "/height_mapping/global_mapping"
-  ros::NodeHandle nhMap_{nh_, "globalmap"}; // "/height_mapping/globalmap/"
+  ros::NodeHandle nh_;                // "/height_mapping/"
+  ros::NodeHandle nhPriv_{"~"};       // "/height_mapping/global_mapping"
+  ros::NodeHandle nhMap_{nh_, "map"}; // "/height_mapping/map/"
+  ros::NodeHandle nhGlobalMap_{nh_,
+                               "globalmap"};   // "/height_mapping/globalmap/"
   ros::NodeHandle nhFrameID_{nh_, "frame_id"}; // "/height_mapping/frame_id/"
 
   // Subscribers

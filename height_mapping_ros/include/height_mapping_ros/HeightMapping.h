@@ -14,9 +14,9 @@
 #include "utils/pointcloud.h"
 
 // Height Map
-#include <height_map_core/height_map_core.h>
-#include <height_map_msgs/HeightMapMsgs.h>
 #include "height_mapping_ros/CloudTypes.h"
+#include <height_mapping_core/height_mapping_core.h>
+#include <height_mapping_msgs/HeightMapMsgs.h>
 
 class FastHeightFilter {
 public:
@@ -66,7 +66,7 @@ public:
   template <typename PointT>
   typename pcl::PointCloud<PointT>::Ptr
   mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-         const Eigen::Affine3d &transform);
+          const Eigen::Affine3d &transform);
 
   void updateMapOrigin(const grid_map::Position &position);
 
@@ -80,7 +80,7 @@ private:
   template <typename PointT>
   typename pcl::PointCloud<PointT>::Ptr
   griddedFilterWithMaxHeight(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-                          float gridSize);
+                             float gridSize);
 
   struct pair_hash {
     template <class T1, class T2>

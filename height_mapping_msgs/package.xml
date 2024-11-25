@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>height_mapping_msgs</name>
+  <version>0.0.0</version>
+  <description>The height_mapping_msgs package</description>
+  <maintainer email="tre0430@korea.ac.kr">Ikhyeon Cho</maintainer>
+  <license>.</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>height_mapping_core</depend>
+  <depend>visualization_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>grid_map_msgs</depend>
+  <depend>grid_map_cv</depend>
+  <depend>grid_map_ros</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+  <export>
+  </export>
+</package>
