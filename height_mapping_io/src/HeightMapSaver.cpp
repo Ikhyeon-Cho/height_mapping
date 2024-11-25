@@ -9,28 +9,24 @@
 
 #include "heightmap_saver/HeightMapSaver.h"
 
-HeightMapSaver::HeightMapSaver()
-{
+HeightMapSaver::HeightMapSaver() {
   // Read Height map image
   cv::Mat image = cv::imread(image_path_);
-  if (image.empty())
-  {
+  if (image.empty()) {
     ROS_ERROR("Could not read the image");
-    return;  // TODO: throw exception
+    return; // TODO: throw exception
   }
 
   // Convert to Height map
-  if (!HeightMapMsgs::fromImage(image, map_))
-  {
+  if (!HeightMapMsgs::fromImage(image, map_)) {
     ROS_ERROR("Could not convert the image to height map");
-    return;  // TODO: throw exception
+    return; // TODO: throw exception
   }
 
   visualization_timer_.start();
 }
 
-void HeightMapSaver::visualizeHeightMap(const ros::WallTimerEvent& event)
-{
+void HeightMapSaver::visualizeHeightMap(const ros::WallTimerEvent &event) {
   // Visualize height map
   // visualization_msgs::Marker msg_region;
   // HeightMapMsgs::toMapRegion(map_, msg_region);
@@ -41,7 +37,8 @@ void HeightMapSaver::visualizeHeightMap(const ros::WallTimerEvent& event)
   pub_heightmap_.publish(msg_map);
 
   sensor_msgs::PointCloud2 msg_cloud;
-  grid_map::GridMapRosConverter::toPointCloud(map_, map_.getHeightLayer() ,msg_cloud);
+  grid_map::GridMapRosConverter::toPointCloud(map_, map_.getHeightLayer(),
+                                              msg_cloud);
   pub_heightcloud_.publish(msg_cloud);
 
   std::cout << "test \n";

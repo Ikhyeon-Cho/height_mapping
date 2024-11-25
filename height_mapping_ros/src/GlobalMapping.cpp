@@ -30,13 +30,14 @@ void GlobalMapping::initGlobalMap() {
 void GlobalMapping::initHeightEstimator() {
 
   if (params_.heightEstimatorType == "KalmanFilter") {
-    height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
+    height_estimator_ = std::make_unique<height_mapping::KalmanEstimator>();
   } else if (params_.heightEstimatorType == "MovingAverage") {
-    height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
+    height_estimator_ =
+        std::make_unique<height_mapping::MovingAverageEstimator>();
   } else if (params_.heightEstimatorType == "StatMean") {
-    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
   } else {
-    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
   }
 }
 template <typename PointT>
@@ -65,6 +66,12 @@ void GlobalMapping::updateMeasuredGridIndices(
 
     measured_indices_.insert(cell_index);
   }
+}
+
+void GlobalMapping::addBasicLayer(const std::string &layer) {
+  auto basic_layers = globalmap_.getBasicLayers();
+  basic_layers.insert(basic_layers.end(), {layer});
+  globalmap_.setBasicLayers(basic_layers);
 }
 
 bool GlobalMapping::clearMap() {

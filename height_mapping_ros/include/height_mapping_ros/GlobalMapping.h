@@ -54,8 +54,11 @@ public:
 
   bool clearMap();
 
-  bool saveLayerToImage(height_mapping_msgs::SaveLayerToImage::Request &request,
-                        height_mapping_msgs::SaveLayerToImage::Response &response);
+  void addBasicLayer(const std::string &layer);
+
+  bool
+  saveLayerToImage(height_mapping_msgs::SaveLayerToImage::Request &request,
+                   height_mapping_msgs::SaveLayerToImage::Response &response);
   bool saveMapToImage(const std::string &layer, const std::string &file_path);
 
   // bool saveAsPcd(std_srvs::Empty::Request& request,
@@ -76,5 +79,5 @@ private:
   Parameters params_;
 
   std::unordered_set<grid_map::Index> measured_indices_;
-  height_map::HeightEstimatorBase::Ptr height_estimator_;
+  height_mapping::HeightEstimatorBase::Ptr height_estimator_;
 };

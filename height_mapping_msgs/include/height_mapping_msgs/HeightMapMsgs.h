@@ -9,21 +9,22 @@
 #ifndef HEIGHT_MAP_MSGS_H
 #define HEIGHT_MAP_MSGS_H
 
-#include <height_mapping_core/heightmap/HeightMap.h>
+#include <height_mapping_core/map/HeightMap.h>
 
-#include <grid_map_ros/GridMapRosConverter.hpp>
-#include <visualization_msgs/Marker.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include "height_mapping_msgs/SaveLayerToImage.h"
+#include <grid_map_ros/GridMapRosConverter.hpp>
+#include <nav_msgs/OccupancyGrid.h>
+#include <visualization_msgs/Marker.h>
 
 #include <grid_map_cv/GridMapCvConverter.hpp>
 
-class HeightMapMsgs
-{
+class HeightMapMsgs {
 public:
-  static void toMapRegion(const grid_map::HeightMap& map, visualization_msgs::Marker& msg);
+  static void toMapRegion(const grid_map::HeightMap &map,
+                          visualization_msgs::Marker &msg);
 
-  static void toOccupancyGrid(const grid_map::HeightMap& map, nav_msgs::OccupancyGrid& msg);
+  static void toOccupancyGrid(const grid_map::HeightMap &map,
+                              nav_msgs::OccupancyGrid &msg);
 };
 
-#endif  // HEIGHT_MAP_MSGS_H
+#endif // HEIGHT_MAP_MSGS_H

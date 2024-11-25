@@ -11,11 +11,11 @@
 
 #include "height_mapping_core/height_estimators/HeightEstimatorBase.h"
 
-namespace height_map {
+namespace height_mapping {
 class KalmanEstimator : public HeightEstimatorBase {
 public:
   KalmanEstimator() = default;
-  virtual ~KalmanEstimator() = default;
+  ~KalmanEstimator() override = default;
 
   void estimate(grid_map::HeightMap &map,
                 const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
@@ -25,23 +25,17 @@ public:
                 const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
 private:
-  void KalmanUpdate(float &height, float &variance, float point_height,
-                    float point_variance) {
-    float K = variance / (variance + point_variance);
+  static void KalmanUpdate(float &height, float &variance,
+                           const float point_height,
+                           const float point_variance) {
+    const float K = variance / (variance + point_variance);
     height = height + K * (point_height - height);
     variance = (1 - K) * variance;
   }
 
-  float getPointVariance(const pcl::PointXYZ &point) const {
-    return std::sqrt(point.x * point.x + point.y * point.y);
-  }
-
-  float getPointVariance(const pcl::PointXYZI &point) const {
-    return std::sqrt(point.x * point.x + point.y * point.y);
-  }
-
-  float getPointVariance(const pcl::PointXYZRGB &point) const {
+  template <typename PointT>
+  static float getPointVariance(const PointT &point) {
     return std::sqrt(point.x * point.x + point.y * point.y);
   }
 };
-} // namespace height_map
+} // namespace height_mapping

@@ -4,7 +4,7 @@ frame_id:
   map: "map"
 
 map:
-  lidarCloudTopic: "/velodyne/pointss"
+  lidarCloudTopic: "/velodyne/points"
   rgbCloudTopic: "/height_mapping/sensor_processor/points"
   gridResolution: 0.1 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
   mapLengthX: 10.0

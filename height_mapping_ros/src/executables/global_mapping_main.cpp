@@ -7,11 +7,10 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include <ros/ros.h>
 #include "height_mapping_ros/GlobalMappingNode.h"
+#include <ros/ros.h>
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
   ros::init(argc, argv, "global_mapping");
   GlobalMappingNode node;
 

@@ -71,6 +71,7 @@ public:
   void updateMapOrigin(const grid_map::Position &position);
 
   const grid_map::HeightMap &getHeightMap() const;
+  void addBasicLayer(const std::string &layer);
 
 private:
   void paramValidityCheck();
@@ -95,5 +96,5 @@ private:
   Parameters params_;
 
   FastHeightFilter heightFilter_;
-  height_map::HeightEstimatorBase::Ptr height_estimator_;
+  height_mapping::HeightEstimatorBase::Ptr height_estimator_;
 };

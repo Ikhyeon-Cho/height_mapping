@@ -45,26 +45,27 @@ void HeightMapping::initHeightEstimator() {
   // - StatMean (by default)
 
   if (params_.heightEstimatorType == "KalmanFilter") {
-    height_estimator_ = std::make_unique<height_map::KalmanEstimator>();
+    height_estimator_ = std::make_unique<height_mapping::KalmanEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> KalmanFilter \033[0m\n";
 
   } else if (params_.heightEstimatorType == "MovingAverage") {
-    height_estimator_ = std::make_unique<height_map::MovingAverageEstimator>();
+    height_estimator_ =
+        std::make_unique<height_mapping::MovingAverageEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> MovingAverage \033[0m\n";
 
   } else if (params_.heightEstimatorType == "StatMean") {
-    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> StatisticalMeanEstimator "
                  "\033[0m\n";
 
   } else {
-    height_estimator_ = std::make_unique<height_map::StatMeanEstimator>();
+    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping] Invalid height "
                  "estimator type. Set Default: StatMeanEstimator \033[0m\n";
@@ -140,6 +141,12 @@ void HeightMapping::updateMapOrigin(const grid_map::Position &position) {
 }
 
 const grid_map::HeightMap &HeightMapping::getHeightMap() const { return map_; }
+
+void HeightMapping::addBasicLayer(const std::string &layer) {
+  auto basic_layers = map_.getBasicLayers();
+  basic_layers.insert(basic_layers.end(), {layer});
+  map_.setBasicLayers(basic_layers);
+}
 
 //////////////////////////////////////////////////
 // Explicit instantiation of template functions //

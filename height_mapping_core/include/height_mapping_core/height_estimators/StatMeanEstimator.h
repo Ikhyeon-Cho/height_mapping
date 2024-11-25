@@ -7,39 +7,38 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#ifndef SIMPLE_MEAN_ESTIMATOR_H
-#define SIMPLE_MEAN_ESTIMATOR_H
+#pragma once
 
 #include "height_mapping_core/height_estimators/HeightEstimatorBase.h"
 
-namespace height_map
-{
-class StatMeanEstimator : public HeightEstimatorBase
-{
+namespace height_mapping {
+class StatMeanEstimator : public HeightEstimatorBase {
 public:
   StatMeanEstimator() = default;
-  virtual ~StatMeanEstimator() = default;
+  ~StatMeanEstimator() override = default;
 
-  void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud) override;
-  void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud) override;
-  void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud) override;
+  void estimate(grid_map::HeightMap &map,
+                const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
+  void estimate(grid_map::HeightMap &map,
+                const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
+  void estimate(grid_map::HeightMap &map,
+                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
 private:
   // Update statistics: mu, sigma2, n
   // recursive update of mean and variance:
   // https://math.stackexchange.com/questions/374881/recursive-formula-for-variance
-  void statisticalMeanVarianceUpdate(float& height, float& variance, float n_measured, float point_height)
-  {
-    auto prev_height = height;
+  void updateStats(float &height, float &variance, float n_measured,
+                   float point_height) {
+    const float prev_height = height;
     height += (point_height - height) / n_measured;
-    variance += std::pow(prev_height, 2) - std::pow(height, 2) +
-                (std::pow(point_height, 2) - variance - std::pow(prev_height, 2)) / n_measured;
+    variance +=
+        std::pow(prev_height, 2) - std::pow(height, 2) +
+        (std::pow(point_height, 2) - variance - std::pow(prev_height, 2)) /
+            n_measured;
   }
-  void statisticalMeanUpdate(float& attribute, float n_measured, float point_attribute)
-  {
+  void updateMean(float &attribute, float n_measured, float point_attribute) {
     attribute += (point_attribute - attribute) / n_measured;
   }
 };
-}  // namespace height_map
-
-#endif /* SIMPLE_MEAN_ESTIMATOR_H */
+} // namespace height_mapping

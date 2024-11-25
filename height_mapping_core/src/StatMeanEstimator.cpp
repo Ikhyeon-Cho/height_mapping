@@ -9,7 +9,7 @@
 
 #include "height_mapping_core/height_estimators/StatMeanEstimator.h"
 
-namespace height_map {
+namespace height_mapping {
 void StatMeanEstimator::estimate(grid_map::HeightMap &map,
                                  const pcl::PointCloud<pcl::PointXYZ> &cloud) {
   if (hasEmptyCloud(cloud))
@@ -47,7 +47,7 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
       continue;
     }
 
-    statisticalMeanVarianceUpdate(height, variance, n_measured, point.z);
+    updateStats(height, variance, n_measured, point.z);
   }
 }
 
@@ -93,9 +93,8 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
       continue;
     }
 
-    statisticalMeanVarianceUpdate(height, variance, n_measured, point.z);
-    statisticalMeanVarianceUpdate(intensity, variance, n_measured,
-                                  point.intensity);
+    updateStats(height, variance, n_measured, point.z);
+    updateStats(intensity, variance, n_measured, point.intensity);
   }
 }
 
@@ -156,13 +155,19 @@ void StatMeanEstimator::estimate(
       continue;
     }
 
+    if (!std::isfinite(r) || !std::isfinite(g) || !std::isfinite(b)) {
+      r = point.r;
+      g = point.g;
+      b = point.b;
+    }
+
     ++n_measured;
-    statisticalMeanVarianceUpdate(height, variance, n_measured, point.z);
-    statisticalMeanUpdate(r, n_measured, point.r);
-    statisticalMeanUpdate(g, n_measured, point.g);
-    statisticalMeanUpdate(b, n_measured, point.b);
+    updateStats(height, variance, n_measured, point.z);
+    updateMean(r, n_measured, point.r);
+    updateMean(g, n_measured, point.g);
+    updateMean(b, n_measured, point.b);
     grid_map::colorVectorToValue(Eigen::Vector3i(r, g, b), color);
   }
 }
 
-} // namespace height_map
+} // namespace height_mapping

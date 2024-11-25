@@ -7,11 +7,10 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include <ros/ros.h>
 #include "heightmap_saver/HeightMapSaver.h"
+#include <ros/ros.h>
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
   ros::init(argc, argv, "heightmap_saver");
 
   HeightMapSaver heightmap_saver_node;

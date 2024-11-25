@@ -14,10 +14,8 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-namespace utils
-{
-namespace tf
-{
+namespace utils {
+namespace tf {
 /// @brief
 /// @tparam T Datatype
 /// @param in The data to be transformed
@@ -26,8 +24,8 @@ namespace tf
 /// @param out A reference to the transformed data
 /// @return True if succeed to get transformed data. False otherwise
 template <typename T>
-static bool doTransform(const T& in, T& out, geometry_msgs::TransformStamped& transform)
-{
+static bool doTransform(const T &in, T &out,
+                        geometry_msgs::TransformStamped &transform) {
   tf2::doTransform(in, out, transform);
   return true;
 }
@@ -35,19 +33,19 @@ static bool doTransform(const T& in, T& out, geometry_msgs::TransformStamped& tr
 /// @brief
 /// @param quaternion tf2 quaternion
 /// @return roll, pitch, yaw angle [rad]
-static std::tuple<double, double, double> getRPYFrom(const tf2::Quaternion& quaternion)
-{
+static std::tuple<double, double, double>
+getRPYFrom(const tf2::Quaternion &quaternion) {
   double roll, pitch, yaw;
   tf2::Matrix3x3 matrix(quaternion);
   matrix.getEulerYPR(yaw, pitch, roll);
-  return { roll, pitch, yaw };
+  return {roll, pitch, yaw};
 }
 
 /// @brief
 /// @param quaternion geometry_msgs quaternion
 /// @return roll, pitch, yaw angle [rad]
-static std::tuple<double, double, double> getRPYFrom(const geometry_msgs::Quaternion& quaternion)
-{
+static std::tuple<double, double, double>
+getRPYFrom(const geometry_msgs::Quaternion &quaternion) {
   double roll, pitch, yaw;
   tf2::Quaternion quaternion_tf;
   tf2::fromMsg(quaternion, quaternion_tf);
@@ -58,8 +56,8 @@ static std::tuple<double, double, double> getRPYFrom(const geometry_msgs::Quater
 /// @param roll roll angle [rad]
 /// @param pitch pitch angle [rad]
 /// @param yaw yaw angle [rad]
-static tf2::Quaternion getQuaternionFrom(double roll, double pitch, double yaw)
-{
+static tf2::Quaternion getQuaternionFrom(double roll, double pitch,
+                                         double yaw) {
   tf2::Quaternion quaternion;
   quaternion.setRPY(roll, pitch, yaw);
   return quaternion;
@@ -69,22 +67,22 @@ static tf2::Quaternion getQuaternionFrom(double roll, double pitch, double yaw)
 /// @param roll roll angle [rad]
 /// @param pitch pitch angle [rad]
 /// @param yaw yaw angle [rad]
-static geometry_msgs::Quaternion getQuaternionMsgFrom(double roll, double pitch, double yaw)
-{
-  tf2::Quaternion quaternion_tf{ getQuaternionFrom(roll, pitch, yaw) };
+static geometry_msgs::Quaternion getQuaternionMsgFrom(double roll, double pitch,
+                                                      double yaw) {
+  tf2::Quaternion quaternion_tf{getQuaternionFrom(roll, pitch, yaw)};
   return tf2::toMsg(quaternion_tf);
 }
 
 /// @brief
 /// @param transform geometry_msgs::Transform Type
 /// @param transform_eigen Eigen Transform Matrix
-static Eigen::Affine3d toAffine3d(const geometry_msgs::Transform& transform)
-{
+static Eigen::Affine3d toAffine3d(const geometry_msgs::Transform &transform) {
   auto transform_eigen = Eigen::Affine3d::Identity();
 
   // set translation
   Eigen::Vector3d translation;
-  translation << transform.translation.x, transform.translation.y, transform.translation.z;
+  translation << transform.translation.x, transform.translation.y,
+      transform.translation.z;
   transform_eigen.translation() = translation;
 
   // set rotation
@@ -97,7 +95,7 @@ static Eigen::Affine3d toAffine3d(const geometry_msgs::Transform& transform)
 
   return transform_eigen;
 }
-}  // namespace tf
-}  // namespace utils
+} // namespace tf
+} // namespace utils
 
-#endif  // ROS_UTILS_TRANSFORM_H
+#endif // ROS_UTILS_TRANSFORM_H

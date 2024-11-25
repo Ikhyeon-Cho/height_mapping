@@ -7,36 +7,31 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#ifndef EWMA_HEIGHT_ESTIMATOR_H
-#define EWMA_HEIGHT_ESTIMATOR_H
+#pragma once
 
 #include "height_mapping_core/height_estimators/HeightEstimatorBase.h"
 
-namespace height_map
-{
-class MovingAverageEstimator : public HeightEstimatorBase
-{
+namespace height_mapping {
+class MovingAverageEstimator : public HeightEstimatorBase {
 public:
   MovingAverageEstimator() = default;
-  virtual ~MovingAverageEstimator() = default;
+  ~MovingAverageEstimator() override = default;
 
-  void setMovingAverageWeight(float alpha)
-  {
-    alpha_ = alpha;
-  }
+  void setMovingAverageWeight(float alpha) { alpha_ = alpha; }
 
-  void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZ>& cloud) override;
-  void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZI>& cloud) override;
-  void estimate(grid_map::HeightMap& map, const pcl::PointCloud<pcl::PointXYZRGB>& cloud) override;
+  void estimate(grid_map::HeightMap &map,
+                const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
+  void estimate(grid_map::HeightMap &map,
+                const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
+  void estimate(grid_map::HeightMap &map,
+                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
 private:
-  void ExponentialWeightedMovingAverageUpdate(float& height, float point_height)
-  {
-    height = (1 - alpha_) * height + alpha_ * point_height;
+  static void updateMean(float &height, const float point_height,
+                         const float alpha) {
+    height = (1 - alpha) * height + alpha * point_height;
   }
 
-  float alpha_{ 0.8 };
+  float alpha_{0.8}; // Moving average weight [0, 1]
 };
-}  // namespace height_map
-
-#endif /* EWMA_HEIGHT_ESTIMATOR_H */
+} // namespace height_mapping

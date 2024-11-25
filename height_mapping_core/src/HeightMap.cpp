@@ -7,7 +7,7 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_mapping_core/heightmap/HeightMap.h"
+#include "height_mapping_core/map/HeightMap.h"
 
 namespace grid_map {
 HeightMap::HeightMap(double length_x, double length_y, double grid_resolution) {

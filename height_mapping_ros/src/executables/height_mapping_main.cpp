@@ -7,12 +7,11 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include <ros/ros.h>
 #include "height_mapping_ros/HeightMappingNode.h"
+#include <ros/ros.h>
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "height_mapping_node");  // launch file overrides this
+int main(int argc, char **argv) {
+  ros::init(argc, argv, "height_mapping_node"); // launch file overrides this
   HeightMappingNode node;
 
   ros::spin();

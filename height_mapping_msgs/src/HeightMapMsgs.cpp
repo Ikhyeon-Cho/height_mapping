@@ -9,8 +9,8 @@
 
 #include "height_mapping_msgs/HeightMapMsgs.h"
 
-void HeightMapMsgs::toMapRegion(const grid_map::HeightMap& map, visualization_msgs::Marker& msg)
-{
+void HeightMapMsgs::toMapRegion(const grid_map::HeightMap &map,
+                                visualization_msgs::Marker &msg) {
   msg.ns = "height_map";
   msg.lifetime = ros::Duration();
   msg.action = visualization_msgs::Marker::ADD;
@@ -48,17 +48,20 @@ void HeightMapMsgs::toMapRegion(const grid_map::HeightMap& map, visualization_ms
   msg.points[4] = msg.points[0];
 }
 
-void HeightMapMsgs::toOccupancyGrid(const grid_map::HeightMap& map, nav_msgs::OccupancyGrid& msg)
-{
-  const auto& elevation_grid = map[map.getHeightLayer()];
+void HeightMapMsgs::toOccupancyGrid(const grid_map::HeightMap &map,
+                                    nav_msgs::OccupancyGrid &msg) {
+  const auto &elevation_grid = map[map.getHeightLayer()];
 
   // NAN processing for finding min and max
-  auto fill_NAN_with_min = elevation_grid.array().isNaN().select(std::numeric_limits<float>::lowest(), elevation_grid);
-  auto fill_NAN_with_max = elevation_grid.array().isNaN().select(std::numeric_limits<float>::max(), elevation_grid);
+  auto fill_NAN_with_min = elevation_grid.array().isNaN().select(
+      std::numeric_limits<float>::lowest(), elevation_grid);
+  auto fill_NAN_with_max = elevation_grid.array().isNaN().select(
+      std::numeric_limits<float>::max(), elevation_grid);
 
   // Find min and max
   float min = fill_NAN_with_max.minCoeff();
   float max = fill_NAN_with_min.maxCoeff();
 
-  grid_map::GridMapRosConverter::toOccupancyGrid(map, map.getHeightLayer(), min, max, msg);
+  grid_map::GridMapRosConverter::toOccupancyGrid(map, map.getHeightLayer(), min,
+                                                 max, msg);
 }

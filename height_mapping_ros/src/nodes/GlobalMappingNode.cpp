@@ -107,12 +107,11 @@ void GlobalMappingNode::rgbCloudCallback(
 
 void GlobalMappingNode::publishMap(const ros::TimerEvent &) {
 
+  // Visualize global map
   sensor_msgs::PointCloud2 cloud_msg;
   std::vector<std::string> layers = globalMapping_->getHeightMap().getLayers();
-
   toPointCloud2(globalMapping_->getHeightMap(), layers,
                 globalMapping_->getMeasuredIndices(), cloud_msg);
-
   pubGlobalMap_.publish(cloud_msg);
 
   // Visualize map region
@@ -142,6 +141,8 @@ void GlobalMappingNode::toPointCloud2(
       fieldNames.push_back("rgb");
     } else if (layer == "intensity") {
       fieldNames.push_back("intensity");
+    } else if (layer == "variance") {
+      fieldNames.push_back("variance");
     } else {
       continue;
     }
