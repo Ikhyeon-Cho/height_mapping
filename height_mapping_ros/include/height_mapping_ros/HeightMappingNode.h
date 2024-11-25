@@ -52,6 +52,8 @@ private:
   ros::Publisher pubHeightMap_;
   ros::Publisher pubLaserProcessed_;
   ros::Publisher pubRGBProcessed_;
+  ros::Publisher pubDebugLaserCloud_;
+  ros::Publisher pubDebugRGBCloud_;
 
   // Timers
   ros::Timer robotPoseUpdateTimer_;

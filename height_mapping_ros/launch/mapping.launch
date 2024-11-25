@@ -7,6 +7,7 @@
   - Use debug_mode:=true to publish debug information
 -->
 <launch>
+  <arg name="use_sensor_processor" default="false" />
   <arg name="global_mapping" default="false" />
   <arg name="debug_mode" default="false" />
 
@@ -15,7 +16,9 @@
     <rosparam file="$(find height_mapping)/config/params.yaml" command="load" subst_value="true" />
 
     <!-- Sensor Processing node -->
-    <include file="$(find height_mapping)/launch/include/sensor_processor.launch.xml" />
+    <group if="$(arg use_sensor_processor)">
+      <include file="$(find height_mapping)/launch/include/sensor_processor.launch.xml" />
+    </group>
 
     <!-- Mapping node -->
     <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
@@ -33,7 +36,7 @@
     <!-- Global mapping node -->
     <group if="$(arg global_mapping)">
       <node pkg="height_mapping" type="global_mapping_node" name="global_mapping" output="screen">
-        <param name="mapPublishRate" value="1.0" />
+        <param name="mapPublishRate" value="10.0" />
       </node>
     </group>
   </group>

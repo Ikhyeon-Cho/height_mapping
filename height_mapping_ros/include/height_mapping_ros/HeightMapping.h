@@ -16,10 +16,7 @@
 // Height Map
 #include <height_map_core/height_map_core.h>
 #include <height_map_msgs/HeightMapMsgs.h>
-#include <height_map_pcl/pclProcessor.h>
-
-// Point types
-#include "PointTypes.h"
+#include "height_mapping_ros/CloudTypes.h"
 
 class FastHeightFilter {
 public:
@@ -28,12 +25,14 @@ public:
   template <typename PointT>
   void filter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
               typename pcl::PointCloud<PointT>::Ptr &filtered_cloud) {
+    filtered_cloud->header = cloud->header;
+
     filtered_cloud->points.clear();
     filtered_cloud->points.reserve(cloud->points.size());
 
     for (const auto &point : cloud->points) {
       if (point.z >= min_z_ && point.z <= max_z_) {
-        filtered_cloud->points.push_back(point);
+        filtered_cloud->points.emplace_back(point);
       }
     }
 
@@ -65,8 +64,9 @@ public:
   void fastHeightFilter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
                         typename pcl::PointCloud<PointT>::Ptr &filtered_cloud);
   template <typename PointT>
-  void update(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-                     const Eigen::Affine3d &transform);
+  typename pcl::PointCloud<PointT>::Ptr
+  mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+         const Eigen::Affine3d &transform);
 
   void updateMapOrigin(const grid_map::Position &position);
 
@@ -76,6 +76,20 @@ private:
   void paramValidityCheck();
   void initHeightMap();
   void initHeightEstimator();
+
+  template <typename PointT>
+  typename pcl::PointCloud<PointT>::Ptr
+  griddedFilterWithMaxHeight(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+                          float gridSize);
+
+  struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator()(const std::pair<T1, T2> &p) const {
+      auto h1 = std::hash<T1>{}(p.first);
+      auto h2 = std::hash<T2>{}(p.second);
+      return h1 ^ h2;
+    }
+  };
 
   grid_map::HeightMap map_{10, 10, 0.1};
   Parameters params_;

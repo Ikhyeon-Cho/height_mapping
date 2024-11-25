@@ -11,45 +11,49 @@
 #define ROS_UTILS_POINTCLOUD_H
 
 // PCL
-#include <pcl/point_cloud.h>
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/point_cloud.h>
 
 // TF Transform
 #include "transform.h"
 
-template <typename T>
-using PointCloud = pcl::PointCloud<T>;
+template <typename T> using PointCloud = pcl::PointCloud<T>;
 
-template <typename T>
-using PointCloudPtr = typename PointCloud<T>::Ptr;
+template <typename T> using PointCloudPtr = typename PointCloud<T>::Ptr;
 
-namespace utils
-{
-namespace pcl
-{
-/// @brief The users should check whether the transform is succeeded or not (nullptr)
+namespace utils {
+namespace pcl {
+/// @brief The users should check whether the transform is succeeded or not
+/// (nullptr)
 /// @tparam T pcl point type
 /// @param input The pointcloud to be transformed
 /// @param target_frame The frame to which the data should be transformed
 /// @param success True if succeed to get transform. False otherwise
-/// @return A shared_ptr of the transformed data. If fails to get transform, returns nullptr
+/// @return A shared_ptr of the transformed data. If fails to get transform,
+/// returns nullptr
 template <typename T>
-static PointCloudPtr<T> transformPointcloud(const PointCloudPtr<T>& input,
-                                            const geometry_msgs::TransformStamped& transform_stamped)
-{
+static PointCloudPtr<T>
+transformPointcloud(const PointCloudPtr<T> &input,
+                    const geometry_msgs::TransformStamped &transform_stamped) {
+
   std::string source_frame(input->header.frame_id);
-  if (source_frame.empty())
-  {
-    ROS_ERROR_STREAM(" [utils::pcl] Warning: Transform failure -  pointcloud has no frame id");
+  if (source_frame.empty()) {
+    ROS_ERROR_STREAM(" [utils::pcl] Warning: Transform failure -  pointcloud "
+                     "has no frame id");
     return input;
   }
 
-  if (input->empty())
-  {
-    ROS_ERROR_STREAM(" [utils::pcl] Warning: Transform failure -  pointcloud is empty");
+  if (input->empty()) {
+    ROS_ERROR_STREAM(
+        " [utils::pcl] Warning: Transform failure -  pointcloud is empty");
+    return input;
+  }
+
+  // Skip transformation if the source and target frame are the same
+  if (transform_stamped.child_frame_id == transform_stamped.header.frame_id) {
     return input;
   }
 
@@ -63,9 +67,10 @@ static PointCloudPtr<T> transformPointcloud(const PointCloudPtr<T>& input,
 }
 
 template <typename T>
-static PointCloudPtr<T> filterPointcloudByField(const PointCloudPtr<T>& input, const std::string& field,
-                                                double field_min, double field_max, bool negative = false)
-{
+static PointCloudPtr<T>
+filterPointcloudByField(const PointCloudPtr<T> &input, const std::string &field,
+                        double field_min, double field_max,
+                        bool negative = false) {
   if (input->empty())
     return input;
 
@@ -82,18 +87,38 @@ static PointCloudPtr<T> filterPointcloudByField(const PointCloudPtr<T>& input, c
 }
 
 template <typename T>
-static PointCloudPtr<T> filterPointcloudByRange2D(const PointCloudPtr<T>& input, double range_min, double range_max)
-{
+static PointCloudPtr<T> filterPointcloudByRange2D(const PointCloudPtr<T> &input,
+                                                  double range_min,
+                                                  double range_max) {
   if (input->empty())
     return input;
 
   PointCloudPtr<T> output = boost::make_shared<PointCloud<T>>();
-  for (auto point : input->points)
-  {
+  for (auto point : input->points) {
     double range_2D = sqrt(point.x * point.x + point.y * point.y);
 
-    if (range_2D > range_min && range_2D < range_max)
-    {
+    if (range_2D > range_min && range_2D < range_max) {
+      T filtered_point = point;
+      output->points.emplace_back(filtered_point);
+    }
+  }
+  output->header = input->header;
+  return output;
+}
+
+template <typename T>
+static PointCloudPtr<T> filterPointcloudByRange(const PointCloudPtr<T> &input,
+                                                double range_min,
+                                                double range_max) {
+  if (input->empty())
+    return input;
+
+  PointCloudPtr<T> output = boost::make_shared<PointCloud<T>>();
+  for (auto point : input->points) {
+    double range =
+        sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+
+    if (range > range_min && range < range_max) {
       T filtered_point = point;
       output->points.push_back(filtered_point);
     }
@@ -103,45 +128,24 @@ static PointCloudPtr<T> filterPointcloudByRange2D(const PointCloudPtr<T>& input,
 }
 
 template <typename T>
-static PointCloudPtr<T> filterPointcloudByRange(const PointCloudPtr<T>& input, double range_min, double range_max)
-{
+static PointCloudPtr<T>
+filterPointcloudByAngle(const PointCloudPtr<T> &input, double angle_start,
+                        double angle_end, bool negative = false) {
   if (input->empty())
     return input;
 
   PointCloudPtr<T> output = boost::make_shared<PointCloud<T>>();
-  for (auto point : input->points)
-  {
-    double range = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
-
-    if (range > range_min && range < range_max)
-    {
-      T filtered_point = point;
-      output->points.push_back(filtered_point);
-    }
-  }
-  output->header = input->header;
-  return output;
-}
-
-template <typename T>
-static PointCloudPtr<T> filterPointcloudByAngle(const PointCloudPtr<T>& input, double angle_start, double angle_end,
-                                                bool negative = false)
-{
-  if (input->empty())
-    return input;
-
-  PointCloudPtr<T> output = boost::make_shared<PointCloud<T>>();
-  for (auto point : input->points)
-  {
+  for (auto point : input->points) {
     double angle_horizon = std::atan2(point.y, point.x);
-    bool filter_condition = angle_horizon > DEG2RAD(angle_start) && angle_horizon < DEG2RAD(angle_end);
+    bool filter_condition = angle_horizon > DEG2RAD(angle_start) &&
+                            angle_horizon < DEG2RAD(angle_end);
     if (negative)
       filter_condition = !filter_condition;
 
-    if (filter_condition)
-    {
+    if (filter_condition) {
       T filtered_point = point;
-      filtered_point.intensity = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+      filtered_point.intensity =
+          sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
       output->points.push_back(filtered_point);
     }
   }
@@ -150,9 +154,9 @@ static PointCloudPtr<T> filterPointcloudByAngle(const PointCloudPtr<T>& input, d
 }
 
 template <typename T>
-static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T>& input, double voxel_x, double voxel_y,
-                                                double voxel_z)
-{
+static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T> &input,
+                                                double voxel_x, double voxel_y,
+                                                double voxel_z) {
   if (input->empty())
     return input;
 
@@ -166,12 +170,12 @@ static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T>& input, d
 }
 
 template <typename T>
-static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T>& input, double voxel_size)
-{
+static PointCloudPtr<T> filterPointcloudByVoxel(const PointCloudPtr<T> &input,
+                                                double voxel_size) {
   return filterPointcloudByVoxel<T>(input, voxel_size, voxel_size, voxel_size);
 }
 
-}  // namespace pcl
-};  // namespace utils
+} // namespace pcl
+}; // namespace utils
 
-#endif  // ROS_UTILS_POINTCLOUD_H
+#endif // ROS_UTILS_POINTCLOUD_H

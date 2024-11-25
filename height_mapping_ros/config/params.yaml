@@ -1,33 +1,12 @@
-# -> Parameters for /height_mapping/frame_id/...
 frame_id:
   base_link: "base_link"
   odom: "odom"
   map: "map"
 
-# -> Parameters for /height_mapping/sensor_processor/...
-sensor_processor:
-  pointType: "color" # color: rgb cloud, laser: intensity cloud
-  inputCloudTopic1: "/zed2/pointcloud/points"
-  inputCloudTopic2: "/rs_camera_left/pointcloud/points"
-  inputCloudTopic3: "/rs_camera_right/pointcloud/points"
-  downsamplingResolution: 0.02 # [m/voxel]
-  minRangeThreshold: 0.3
-  maxRangeThreshold: 5.0
-
-  ### Uncomment the lines below if you want to use LiDAR sensor
-  pointType: "laser" # color: rgb cloud, laser: intensity cloud
-  inputCloudTopic1: "/velodyne/points"
-  inputCloudTopic2: ""
-  inputCloudTopic3: ""
-  downsamplingResolution: 0 # [m/voxel] # 0 for no downsampling
-  minRangeThreshold: 0.3
-  maxRangeThreshold: 10.0
-
-  cloudPublishRate: 10
-
-# -> Parameters for /height_mapping/map/...
-map:  
-  gridResolution: 0.05 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
+map:
+  lidarCloudTopic: "/velodyne/points"
+  rgbCloudTopic: "/height_mapping/sensor_processor/points"
+  gridResolution: 0.1 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
   mapLengthX: 10.0
   mapLengthY: 10.0
   heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
@@ -41,3 +20,14 @@ globalmap:
   mapLengthY: 400
   mapPublishRate: 10.0
   mapSaveDir: "$(find height_mapping)/map_image"
+
+# For multiple rgb-d sensors usage
+sensor_processor:
+  rgbCloudTopics:
+    - "/camera_front/pointcloud/points"
+    - "/camera_left/pointcloud/points"
+    - "/camera_right/pointcloud/points"
+  processedCloudTopic: "/height_mapping/sensor_processor/points"
+  downsamplingResolution: 0.02 # [m/voxel]
+  minRangeThreshold: 0.3
+  maxRangeThreshold: 15.0

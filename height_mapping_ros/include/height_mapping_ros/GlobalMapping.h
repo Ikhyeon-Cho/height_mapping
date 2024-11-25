@@ -18,7 +18,7 @@
 #include <unordered_set>
 
 // Point types
-#include "PointTypes.h"
+#include "height_mapping_ros/CloudTypes.h"
 
 namespace std {
 template <> struct hash<grid_map::Index> {
@@ -52,7 +52,7 @@ public:
 
   void updateFromLocalMap(const sensor_msgs::PointCloud2ConstPtr &msg) {
     // pcl::fromROSMsg(*msg, *heightmap_cloud_);
-    // addMeasuredGridIndices(globalmap_, *heightmap_cloud_);
+    // updateMeasuredGridIndices(globalmap_, *heightmap_cloud_);
 
     // height_estimator_->estimate(globalmap_, *heightmap_cloud_);
   }
@@ -75,7 +75,7 @@ private:
   void initGlobalMap();
   void initHeightEstimator();
   template <typename PointT>
-  void addMeasuredGridIndices(const grid_map::HeightMap &map,
+  void updateMeasuredGridIndices(const grid_map::HeightMap &map,
                               const pcl::PointCloud<PointT> &cloud);
   grid_map::HeightMap globalmap_{400, 400, 0.1};
   Parameters params_;

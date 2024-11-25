@@ -74,4 +74,7 @@ private:
 
   // Core mapping object
   std::unique_ptr<GlobalMapping> globalMapping_;
+
+  // State variables
+  bool localMapReceived_{false};
 };

@@ -64,10 +64,9 @@ HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
 
 void HeightMappingNode::setupROSInterface() {
   // Topics
-  subLaserTopic_ = nh_.param<std::string>(
-      "lidarCloudTopic", "/height_mapping/sensor/laser/points");
-  subRGBTopic_ = nh_.param<std::string>("rgbCloudTopic",
-                                        "/height_mapping/sensor/color/points");
+  subLaserTopic_ =
+      nhMap_.param<std::string>("lidarCloudTopic", "/points_laser");
+  subRGBTopic_ = nhMap_.param<std::string>("rgbCloudTopic", "/points_rgb");
 
   // Subscribers
   subLaserCloud_ = nh_.subscribe(subLaserTopic_, 1,
@@ -79,12 +78,17 @@ void HeightMappingNode::setupROSInterface() {
   pubHeightMap_ =
       nh_.advertise<grid_map_msgs::GridMap>("/height_mapping/map/gridmap", 1);
 
+  pubLaserProcessed_ = nh_.advertise<sensor_msgs::PointCloud2>(
+      "/height_mapping/mapping/lasercloud", 1);
+  pubRGBProcessed_ = nh_.advertise<sensor_msgs::PointCloud2>(
+      "/height_mapping/mapping/rgbdcloud", 1);
+
   // For debug
   if (debugMode_) {
-    pubLaserProcessed_ = nh_.advertise<sensor_msgs::PointCloud2>(
-        "/height_mapping/debug/laser_downsampled", 1);
-    pubRGBProcessed_ = nh_.advertise<sensor_msgs::PointCloud2>(
-        "/height_mapping/debug/rgbd_downsampled", 1);
+    pubDebugLaserCloud_ = nh_.advertise<sensor_msgs::PointCloud2>(
+        "/height_mapping/debug/lasercloud", 1);
+    pubDebugRGBCloud_ = nh_.advertise<sensor_msgs::PointCloud2>(
+        "/height_mapping/debug/rgbdcloud", 1);
   }
 }
 
@@ -95,8 +99,10 @@ void HeightMappingNode::laserCloudCallback(
   if (!laserReceived_) {
     laserReceived_ = true;
     robotPoseUpdateTimer_.start();
-    std::cout << "\033[32m[HeightMappingNode]: Cloud Received! "
-              << "Use LiDAR pointcloud for height mapping... \033[0m\n";
+    mapPublishTimer_.start();
+    std::cout
+        << "\033[1;33m[HeightMapping::HeightMapping]: Laser cloud Received! "
+        << "Use LiDAR sensor for height mapping... \033[0m\n";
   }
 
   // Get Transform matrix
@@ -116,15 +122,22 @@ void HeightMappingNode::laserCloudCallback(
       utils::pcl::transformPointcloud<Laser>(inputCloud, laser2Baselink);
   heightMapping_->fastHeightFilter<Laser>(baselinkCloud, processedCloud);
 
-  // Debug: publish processed pointcloud
-  if (debugMode_) {
-    sensor_msgs::PointCloud2 processedCloudMsg;
-    pcl::toROSMsg(*processedCloud, processedCloudMsg);
-    pubLaserProcessed_.publish(processedCloudMsg);
-  }
   // Mapping
-  heightMapping_->update<Laser>(processedCloud,
-                                utils::tf::toAffine3d(baselink2Map.transform));
+  auto transform = utils::tf::toAffine3d(baselink2Map.transform);
+  auto mappedLaserCloud =
+      heightMapping_->mapping<Laser>(processedCloud, transform);
+
+  // Publish pointcloud used for mapping
+  sensor_msgs::PointCloud2 cloudMsg;
+  pcl::toROSMsg(*mappedLaserCloud, cloudMsg);
+  pubLaserProcessed_.publish(cloudMsg);
+
+  // Debug: publish pointcloud that you want to see
+  if (debugMode_) {
+    sensor_msgs::PointCloud2 debugMsg;
+    pcl::toROSMsg(*processedCloud, debugMsg);
+    pubDebugLaserCloud_.publish(debugMsg);
+  }
 }
 
 void HeightMappingNode::rgbCloudCallback(
@@ -134,13 +147,15 @@ void HeightMappingNode::rgbCloudCallback(
   if (!rgbReceived_) {
     rgbReceived_ = true;
     robotPoseUpdateTimer_.start();
-    std::cout << "\033[32m[HeightMappingNode]: Cloud Received! "
-              << "Use RGB-D pointcloud for height mapping... \033[0m\n";
+    mapPublishTimer_.start();
+    std::cout
+        << "\033[1;33m[HeightMapping::HeightMapping]: Colored cloud Received! "
+        << "Use RGB-D sensors for height mapping... \033[0m\n";
   }
 
   // Get Transform matrix
-  const auto &rgbFrame = msg->header.frame_id;
-  auto [get1, rgb2Baselink] = tf_.getTransform(rgbFrame, baselinkFrame_);
+  const auto &cameraFrame = msg->header.frame_id;
+  auto [get1, camera2Baselink] = tf_.getTransform(cameraFrame, baselinkFrame_);
   auto [get2, baselink2Map] = tf_.getTransform(baselinkFrame_, mapFrame_);
   if (!get1 || !get2)
     return;
@@ -152,18 +167,25 @@ void HeightMappingNode::rgbCloudCallback(
   // Preprocess pointcloud
   pcl::moveFromROSMsg(*msg, *inputCloud);
   auto baselinkCloud =
-      utils::pcl::transformPointcloud<Color>(inputCloud, rgb2Baselink);
+      utils::pcl::transformPointcloud<Color>(inputCloud, camera2Baselink);
   heightMapping_->fastHeightFilter<Color>(baselinkCloud, processedCloud);
 
-  // Debug: publish processed pointcloud
-  if (debugMode_) {
-    sensor_msgs::PointCloud2 processedCloudMsg;
-    pcl::toROSMsg(*processedCloud, processedCloudMsg);
-    pubRGBProcessed_.publish(processedCloudMsg);
-  }
   // Mapping
-  heightMapping_->update<Color>(processedCloud,
-                                utils::tf::toAffine3d(baselink2Map.transform));
+  auto transform = utils::tf::toAffine3d(baselink2Map.transform);
+  auto mappedRGBCloud =
+      heightMapping_->mapping<Color>(processedCloud, transform);
+
+  // Publish pointcloud used for mapping
+  sensor_msgs::PointCloud2 cloudMsg;
+  pcl::toROSMsg(*mappedRGBCloud, cloudMsg);
+  pubRGBProcessed_.publish(cloudMsg);
+
+  // Debug: publish pointcloud that you want to see
+  if (debugMode_) {
+    sensor_msgs::PointCloud2 debugMsg;
+    pcl::toROSMsg(*processedCloud, debugMsg);
+    pubDebugRGBCloud_.publish(debugMsg);
+  }
 }
 
 void HeightMappingNode::updateRobotPose(const ros::TimerEvent &event) {

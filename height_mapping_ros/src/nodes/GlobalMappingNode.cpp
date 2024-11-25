@@ -21,6 +21,9 @@ GlobalMappingNode::GlobalMappingNode() {
 
   globalMapping_ =
       std::make_unique<GlobalMapping>(getGlobalMappingParameters());
+
+  std::cout << "\033[1;32m[HeightMapping::GlobalMapping]: Waiting for Height "
+               "map... \033[0m\n";
 }
 
 void GlobalMappingNode::getNodeParameters() {
@@ -75,6 +78,14 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
 
 void GlobalMappingNode::localMapCallback(
     const sensor_msgs::PointCloud2Ptr &msg) {
+
+  if (!localMapReceived_) {
+    localMapReceived_ = true;
+    mapPublishTimer_.start();
+    std::cout
+        << "\033[1;32m[GlobalMapping::GlobalMapping]: Local map received! "
+        << "Use local map for global mapping... \033[0m\n";
+  }
 
   // TODO: Define point cloud type: local map or cloud?
   pcl::PointCloud<pcl::PointXYZ> cloud;

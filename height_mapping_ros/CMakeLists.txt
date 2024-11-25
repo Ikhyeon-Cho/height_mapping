@@ -38,7 +38,8 @@ include_directories(
 # Sensor processor node
 add_executable(sensor_processor_node 
   src/executables/sensor_processor_main.cpp
-  src/SensorProcessor.cpp
+  src/nodes/SensorProcessorNode.cpp
+  # src/SensorProcessor.cpp
 )
 target_link_libraries(sensor_processor_node
   ${PCL_LIBRARIES}

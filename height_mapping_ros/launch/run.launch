@@ -7,11 +7,13 @@
   - Use debug_mode:=true to publish debug information
 -->
 <launch>
+  <arg name="use_sensor_processor" default="false" />
   <arg name="global_mapping" default="false" />
   <arg name="debug_mode" default="false" />
 
   <!-- Height mapping-->
   <include file="$(find height_mapping)/launch/mapping.launch" >
+    <arg name="use_sensor_processor" value="$(arg use_sensor_processor)" />
     <arg name="global_mapping" value="$(arg global_mapping)" />
     <arg name="debug_mode" value="$(arg debug_mode)" />
   </include>

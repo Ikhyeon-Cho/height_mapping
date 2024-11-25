@@ -16,9 +16,6 @@ GlobalMapping::GlobalMapping(const Parameters &params) : params_(params) {
   initHeightEstimator();
 
   measured_indices_.reserve(globalmap_.getSize().prod());
-
-  std::cout << "\033[1;32m[HeightMapping::GlobalMapping]: Waiting for Height "
-               "map... \033[0m\n";
 }
 
 void GlobalMapping::initGlobalMap() {
@@ -48,7 +45,7 @@ void GlobalMapping::initHeightEstimator() {
 
 // Save measured indices for efficiency
 template <typename PointT>
-void GlobalMapping::addMeasuredGridIndices(
+void GlobalMapping::updateMeasuredGridIndices(
     const grid_map::HeightMap &map, const pcl::PointCloud<PointT> &cloud) {
 
   grid_map::Index cell_index;
@@ -166,10 +163,10 @@ bool GlobalMapping::saveMapToImage(const std::string &layer,
 //////////////////////////////////////////////////
 // Laser
 template void
-GlobalMapping::addMeasuredGridIndices(const grid_map::HeightMap &map,
-                                      const pcl::PointCloud<Laser> &cloud);
+GlobalMapping::updateMeasuredGridIndices(const grid_map::HeightMap &map,
+                                         const pcl::PointCloud<Laser> &cloud);
 
 // Color
 template void
-GlobalMapping::addMeasuredGridIndices(const grid_map::HeightMap &map,
-                                      const pcl::PointCloud<Color> &cloud);
+GlobalMapping::updateMeasuredGridIndices(const grid_map::HeightMap &map,
+                                         const pcl::PointCloud<Color> &cloud);
