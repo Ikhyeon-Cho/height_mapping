@@ -7,6 +7,7 @@
   - Use debug_mode:=true to publish debug information
 -->
 <launch>
+  <arg name="use_lidar" default="true" />
   <arg name="use_sensor_processor" default="false" />
   <arg name="global_mapping" default="false" />
   <arg name="debug_mode" default="false" />
@@ -25,6 +26,7 @@
       <param name="robotPoseUpdateRate" value="15.0" />
       <param name="mapPublishRate" value="15.0" />
       <param name="debugMode" value="$(arg debug_mode)" />
+      <param name="useLidarCallback" value="$(arg use_lidar)" />
     </node>
 
     <!-- Use grid_map_visualization package for map visualization -->

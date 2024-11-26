@@ -74,99 +74,96 @@ void GlobalMapping::addBasicLayer(const std::string &layer) {
   globalmap_.setBasicLayers(basic_layers);
 }
 
-bool GlobalMapping::clearMap() {
-  globalmap_.clearAll();
-  return true;
-}
+void GlobalMapping::clearMap() { globalmap_.clearAll(); }
 
-bool GlobalMapping::saveLayerToImage(
-    height_mapping_msgs::SaveLayerToImage::Request &req,
-    height_mapping_msgs::SaveLayerToImage::Response &res) {
-  // Srv input
-  auto img_path = std::filesystem::path(params_.mapSaveDir) / req.map_name;
-  const auto &layer = req.layer_name;
+// bool GlobalMapping::saveLayerToImage(
+//     height_mapping_msgs::SaveLayerToImage::Request &req,
+//     height_mapping_msgs::SaveLayerToImage::Response &res) {
+//   // Srv input
+//   auto img_path = std::filesystem::path(params_.mapSaveDir) / req.map_name;
+//   const auto &layer = req.layer_name;
 
-  // Check if the directory exists and create if not
-  std::filesystem::path output_path(img_path);
-  if (output_path.has_parent_path())
-    std::filesystem::create_directories(output_path.parent_path());
+//   // Check if the directory exists and create if not
+//   std::filesystem::path output_path(img_path);
+//   if (output_path.has_parent_path())
+//     std::filesystem::create_directories(output_path.parent_path());
 
-  if (layer == "") // Save all layers to image
-  {
-    for (const auto &layer : globalmap_.getLayers()) {
-      if (!saveMapToImage(layer, img_path)) {
-        res.success = false;
-        return false;
-      }
-    }
-    res.success = true;
-    res.img_name = (img_path / "**.png").string();
-    return true;
-  }
+//   if (layer == "") // Save all layers to image
+//   {
+//     for (const auto &layer : globalmap_.getLayers()) {
+//       if (!saveMapToImage(layer, img_path)) {
+//         res.success = false;
+//         return false;
+//       }
+//     }
+//     res.success = true;
+//     res.img_name = (img_path / "**.png").string();
+//     return true;
+//   }
 
-  else // Save a single layer to image
-  {
-    if (!saveMapToImage(layer, img_path)) {
-      res.success = false;
-      return false;
-    }
-    res.success = true;
-    res.img_name = (img_path / (layer + ".png")).string();
-    return true;
-  }
-}
+//   else // Save a single layer to image
+//   {
+//     if (!saveMapToImage(layer, img_path)) {
+//       res.success = false;
+//       return false;
+//     }
+//     res.success = true;
+//     res.img_name = (img_path / (layer + ".png")).string();
+//     return true;
+//   }
+// }
 
-bool GlobalMapping::saveMapToImage(const std::string &layer,
-                                   const std::string &img_path) {
-  const auto &data_matrix = globalmap_[layer];
+// bool GlobalMapping::saveMapToImage(const std::string &layer,
+//                                    const std::string &img_path) {
+//   const auto &data_matrix = globalmap_[layer];
 
-  if (data_matrix.rows() == 0 || data_matrix.cols() == 0) {
-    ROS_ERROR("Map has zero size. Skip map saver service");
-    return false;
-  }
+//   if (data_matrix.rows() == 0 || data_matrix.cols() == 0) {
+//     ROS_ERROR("Map has zero size. Skip map saver service");
+//     return false;
+//   }
 
-  // Convert to cv image
-  cv::Mat image;
-  auto min_val = HeightMapMath::getMinVal(globalmap_, layer);
-  auto max_val = HeightMapMath::getMaxVal(globalmap_, layer);
-  if (!HeightMapConverter::toGrayImage(globalmap_, layer, image, min_val,
-                                       max_val)) {
-    ROS_ERROR("Failed to convert %s data to image.", layer.c_str());
-    return false;
-  }
+//   // Convert to cv image
+//   cv::Mat image;
+//   auto min_val = HeightMapMath::getMinVal(globalmap_, layer);
+//   auto max_val = HeightMapMath::getMaxVal(globalmap_, layer);
+//   if (!HeightMapConverter::toGrayImage(globalmap_, layer, image, min_val,
+//                                        max_val)) {
+//     ROS_ERROR("Failed to convert %s data to image.", layer.c_str());
+//     return false;
+//   }
 
-  // Write cv image to a png file
-  if (!cv::imwrite(img_path + layer + ".png", image)) {
-    ROS_ERROR("Failed to write image to %s.", img_path.c_str());
-    return false;
-  }
+//   // Write cv image to a png file
+//   if (!cv::imwrite(img_path + layer + ".png", image)) {
+//     ROS_ERROR("Failed to write image to %s.", img_path.c_str());
+//     return false;
+//   }
 
-  // Write metadata to a YAML file
-  // std::string yaml_path = img_path + layer + ".yaml";
-  // YAML::Emitter out;
-  // out << YAML::BeginMap;
-  // out << YAML::Key << "Layer" << YAML::Value << layer;
-  // out << YAML::Key << "Grid Resolution" << YAML::Value
-  //     << globalmap_.getResolution();
-  // out << YAML::Key << "Min" << YAML::Value << min_val;
-  // out << YAML::Key << "Max" << YAML::Value << max_val;
-  // out << YAML::EndMap;
+//   // Write metadata to a YAML file
+//   // std::string yaml_path = img_path + layer + ".yaml";
+//   // YAML::Emitter out;
+//   // out << YAML::BeginMap;
+//   // out << YAML::Key << "Layer" << YAML::Value << layer;
+//   // out << YAML::Key << "Grid Resolution" << YAML::Value
+//   //     << globalmap_.getResolution();
+//   // out << YAML::Key << "Min" << YAML::Value << min_val;
+//   // out << YAML::Key << "Max" << YAML::Value << max_val;
+//   // out << YAML::EndMap;
 
-  // std::ofstream fout(yaml_path);
-  // fout << out.c_str();
-  // fout.close();
+//   // std::ofstream fout(yaml_path);
+//   // fout << out.c_str();
+//   // fout.close();
 
-  // // Write a single metadata.txt: layer, grid resolution, min, max values
-  // std::ofstream metadata;
-  // metadata.open(img_path + +"_metadata.txt", std::ios_base::app);
-  // metadata << "Layer: " << layer << std::endl;
-  // metadata << "Grid Resolution: " << map_.getResolution() << std::endl;
-  // metadata << "Min: " << min_val << std::endl;
-  // metadata << "Max: " << max_val << std::endl << std::endl;
-  // metadata.close();
+//   // // Write a single metadata.txt: layer, grid resolution, min, max values
+//   // std::ofstream metadata;
+//   // metadata.open(img_path + +"_metadata.txt", std::ios_base::app);
+//   // metadata << "Layer: " << layer << std::endl;
+//   // metadata << "Grid Resolution: " << map_.getResolution() << std::endl;
+//   // metadata << "Min: " << min_val << std::endl;
+//   // metadata << "Max: " << max_val << std::endl << std::endl;
+//   // metadata.close();
 
-  return true;
-}
+//   return true;
+// }
 
 //////////////////////////////////////////////////
 // Explicit instantiation of template functions //

@@ -24,7 +24,7 @@ GlobalMappingNode::GlobalMappingNode() {
 }
 
 void GlobalMappingNode::getNodeParameters() {
-  mapPublishRate_ = nhPriv_.param<double>("mapPublishRate", 1.0);
+  mapPublishRate_ = nhPriv_.param<double>("mapPublishRate", 10.0);
 }
 
 void GlobalMappingNode::getFrameIDs() {
@@ -52,14 +52,12 @@ void GlobalMappingNode::setupROSInterface() {
       "/height_mapping/globalmap/region", 1);
 
   // Services
-  if (debugMode_) {
-    srvClearMap_ =
-        nh_.advertiseService("/height_mapping/globalmap/clear_map",
-                             &GlobalMappingNode::clearMapCallback, this);
-    srvSaveMap_ =
-        nh_.advertiseService("/height_mapping/globalmap/save_to_image",
-                             &GlobalMappingNode::saveMapCallback, this);
-  }
+  srvSaveMapToBag_ =
+      nh_.advertiseService("/height_mapping/global_mapping/save_map",
+                           &GlobalMappingNode::saveMapCallback, this);
+  srvClearMap_ =
+      nh_.advertiseService("/height_mapping/global_mapping/clear_map",
+                           &GlobalMappingNode::clearMapCallback, this);
 }
 
 GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
@@ -71,7 +69,10 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
   params.gridResolution = nhGlobalMap_.param<double>("gridResolution", 0.1);
   params.mapLengthX = nhGlobalMap_.param<double>("mapLengthX", 400.0);
   params.mapLengthY = nhGlobalMap_.param<double>("mapLengthY", 400.0);
-  params.mapSaveDir = nhGlobalMap_.param<std::string>("mapSaveDir", "");
+
+  bagSavePath_ = nhGlobalMap_.param<std::string>(
+      "bagSavePath",
+      std::string("/home/") + std::getenv("USER") + "/Downloads");
   return params;
 }
 
@@ -111,7 +112,7 @@ void GlobalMappingNode::publishMap(const ros::TimerEvent &) {
   sensor_msgs::PointCloud2 cloud_msg;
   std::vector<std::string> layers = globalMapping_->getHeightMap().getLayers();
   toPointCloud2(globalMapping_->getHeightMap(), layers,
-                globalMapping_->getMeasuredIndices(), cloud_msg);
+                globalMapping_->getMeasuredGridIndices(), cloud_msg);
   pubGlobalMap_.publish(cloud_msg);
 
   // Visualize map region
@@ -212,11 +213,44 @@ void GlobalMappingNode::toPointCloud2(
 
 bool GlobalMappingNode::clearMapCallback(std_srvs::Empty::Request &req,
                                          std_srvs::Empty::Response &res) {
-  return globalMapping_->clearMap();
+  globalMapping_->clearMap();
+  return true;
 }
 
-bool GlobalMappingNode::saveMapCallback(
-    height_mapping_msgs::SaveLayerToImage::Request &req,
-    height_mapping_msgs::SaveLayerToImage::Response &res) {
-  return globalMapping_->saveLayerToImage(req, res);
+bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
+                                        std_srvs::Empty::Response &res) {
+  try {
+    // Save GridMap to rosbag
+    rosbag::Bag bag;
+    bag.open(bagSavePath_, rosbag::bagmode::Write);
+    grid_map_msgs::GridMap gridmap_msg;
+    grid_map::GridMapRosConverter::toMessage(globalMapping_->getHeightMap(),
+                                             gridmap_msg);
+    bag.write("/height_mapping/globalmap/gridmap", ros::Time::now(),
+              gridmap_msg);
+    bag.close();
+
+    // Save PointCloud to PCD
+    std::string pcd_path =
+        bagSavePath_.substr(0, bagSavePath_.find_last_of('.')) + ".pcd";
+    sensor_msgs::PointCloud2 cloud_msg;
+    std::vector<std::string> layers =
+        globalMapping_->getHeightMap().getLayers();
+    toPointCloud2(globalMapping_->getHeightMap(), layers,
+                  globalMapping_->getMeasuredGridIndices(), cloud_msg);
+
+    pcl::PCLPointCloud2 pcl_cloud;
+    pcl_conversions::toPCL(cloud_msg, pcl_cloud);
+    pcl::io::savePCDFile(pcd_path, pcl_cloud);
+
+    std::cout << "\033[1;33m[HeightMapping::GlobalMapping]: Successfully saved "
+              << "map to " << bagSavePath_ << "\033[0m\n";
+
+  } catch (const std::exception &e) {
+    std::cout
+        << "\033[1;31m[HeightMapping::GlobalMapping]: Failed to save map: "
+        << std::string(e.what()) << "\033[0m\n";
+  }
+
+  return true;
 }

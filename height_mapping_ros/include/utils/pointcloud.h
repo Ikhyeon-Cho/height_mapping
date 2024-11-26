@@ -129,27 +129,50 @@ static PointCloudPtr<T> filterPointcloudByRange(const PointCloudPtr<T> &input,
 
 template <typename T>
 static PointCloudPtr<T>
-filterPointcloudByAngle(const PointCloudPtr<T> &input, double angle_start,
-                        double angle_end, bool negative = false) {
-  if (input->empty())
+filterPointcloudByAngle(const PointCloudPtr<T> &input, double x_angle_start_deg,
+                        double x_angle_end_deg, bool negative = false) {
+
+  if (input->empty()) {
     return input;
+  }
 
-  PointCloudPtr<T> output = boost::make_shared<PointCloud<T>>();
-  for (auto point : input->points) {
-    double angle_horizon = std::atan2(point.y, point.x);
-    bool filter_condition = angle_horizon > DEG2RAD(angle_start) &&
-                            angle_horizon < DEG2RAD(angle_end);
-    if (negative)
-      filter_condition = !filter_condition;
+  // Normalize angles to [-180, 180] range
+  auto normalizeAngle = [](double angle) {
+    while (angle > 180.0)
+      angle -= 360.0;
+    while (angle < -180.0)
+      angle += 360.0;
+    return angle;
+  };
 
-    if (filter_condition) {
-      T filtered_point = point;
-      filtered_point.intensity =
-          sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
-      output->points.push_back(filtered_point);
+  const double start_rad = DEG2RAD(normalizeAngle(x_angle_start_deg));
+  const double end_rad = DEG2RAD(normalizeAngle(x_angle_end_deg));
+
+  auto output = boost::make_shared<PointCloud<T>>();
+  output->points.reserve(input->points.size() / 2);
+  output->header = input->header;
+
+  for (const auto &point : input->points) {
+    // Get angle in [-π, π] range
+    const double angle_horizon = std::atan2(point.y, point.x);
+
+    bool keep_point;
+    if (start_rad <= end_rad) {
+      // Normal case: keep points within range
+      keep_point = (angle_horizon >= start_rad && angle_horizon <= end_rad);
+    } else {
+      // Wraparound case (e.g., 135° to -135°)
+      keep_point = (angle_horizon >= start_rad || angle_horizon <= end_rad);
+    }
+
+    if (negative) // Apply negative flag
+      keep_point = !keep_point;
+
+    if (keep_point) {
+      output->points.emplace_back(point);
     }
   }
-  output->header = input->header;
+
   return output;
 }
 

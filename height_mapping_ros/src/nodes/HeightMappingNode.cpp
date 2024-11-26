@@ -33,6 +33,7 @@ void HeightMappingNode::getNodeParameters() {
       nhPriv_.param<double>("robotPoseUpdateRate", 20.0);          // [Hz]
   mapPublishRate_ = nhPriv_.param<double>("mapPublishRate", 10.0); // [Hz]
   debugMode_ = nhPriv_.param<bool>("debugMode", false);
+  useLidarCallback_ = nhPriv_.param<bool>("useLidarCallback", true);
 }
 
 void HeightMappingNode::getFrameIDs() {
@@ -59,8 +60,11 @@ void HeightMappingNode::setupROSInterface() {
   subRGBTopic_ = nhMap_.param<std::string>("rgbCloudTopic", "/points_rgb");
 
   // Subscribers
-  subLaserCloud_ = nh_.subscribe(subLaserTopic_, 1,
-                                 &HeightMappingNode::laserCloudCallback, this);
+  if (useLidarCallback_) {
+    subLaserCloud_ = nh_.subscribe(
+        subLaserTopic_, 1, &HeightMappingNode::laserCloudCallback, this);
+  }
+
   subRGBCloud_ = nh_.subscribe(subRGBTopic_, 1,
                                &HeightMappingNode::rgbCloudCallback, this);
 
@@ -93,6 +97,7 @@ HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
       nhMap_.param<std::string>("heightEstimatorType", "StatMean");
   params.minHeight = nhMap_.param<double>("minHeightThreshold", 0.0);
   params.maxHeight = nhMap_.param<double>("maxHeightThreshold", 1.0);
+
   return params;
 }
 
@@ -125,6 +130,10 @@ void HeightMappingNode::laserCloudCallback(
   auto baselinkCloud =
       utils::pcl::transformPointcloud<Laser>(inputCloud, laser2Baselink);
   heightMapping_->fastHeightFilter<Laser>(baselinkCloud, processedCloud);
+  if (removeRemoterPoints_) {
+    processedCloud = utils::pcl::filterPointcloudByAngle<Laser>(processedCloud,
+                                                                -135.0, 135.0);
+  }
 
   // Mapping
   auto transform = utils::tf::toAffine3d(baselink2Map.transform);
@@ -173,6 +182,10 @@ void HeightMappingNode::rgbCloudCallback(
   auto baselinkCloud =
       utils::pcl::transformPointcloud<Color>(inputCloud, camera2Baselink);
   heightMapping_->fastHeightFilter<Color>(baselinkCloud, processedCloud);
+  if (removeRemoterPoints_) {
+    processedCloud = utils::pcl::filterPointcloudByAngle<Color>(processedCloud,
+                                                                -135.0, 135.0);
+  }
 
   // Mapping
   auto transform = utils::tf::toAffine3d(baselink2Map.transform);

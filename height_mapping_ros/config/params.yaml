@@ -18,7 +18,7 @@ globalmap:
   mapLengthX: 400
   mapLengthY: 400
   mapPublishRate: 10.0
-  mapSaveDir: "$(find height_mapping)/map_image"
+  bagSavePath: "$(find height_mapping)/maps/globalmap.bag"
 
 # For multiple rgb-d sensors usage
 sensor_processor:

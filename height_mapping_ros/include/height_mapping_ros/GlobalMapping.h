@@ -52,20 +52,22 @@ public:
 
   template <typename PointT> void mapping(const pcl::PointCloud<PointT> &cloud);
 
-  bool clearMap();
+  void clearMap();
 
   void addBasicLayer(const std::string &layer);
 
-  bool
-  saveLayerToImage(height_mapping_msgs::SaveLayerToImage::Request &request,
-                   height_mapping_msgs::SaveLayerToImage::Response &response);
-  bool saveMapToImage(const std::string &layer, const std::string &file_path);
+  // bool
+  // saveLayerToImage(height_mapping_msgs::SaveLayerToImage::Request &request,
+  //                  height_mapping_msgs::SaveLayerToImage::Response
+  //                  &response);
+  // bool saveMapToImage(const std::string &layer, const std::string
+  // &file_path);
 
   // bool saveAsPcd(std_srvs::Empty::Request& request,
   // std_srvs::Empty::Response& response);
 
   const grid_map::HeightMap &getHeightMap() const { return globalmap_; }
-  const std::unordered_set<grid_map::Index> &getMeasuredIndices() const {
+  const std::unordered_set<grid_map::Index> &getMeasuredGridIndices() const {
     return measured_indices_;
   }
 
