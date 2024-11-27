@@ -220,28 +220,14 @@ bool GlobalMappingNode::clearMapCallback(std_srvs::Empty::Request &req,
 bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
                                         std_srvs::Empty::Response &res) {
   try {
-    // Save GridMap to rosbag
-    rosbag::Bag bag;
-    bag.open(bagSavePath_, rosbag::bagmode::Write);
-    grid_map_msgs::GridMap gridmap_msg;
-    grid_map::GridMapRosConverter::toMessage(globalMapping_->getHeightMap(),
-                                             gridmap_msg);
-    bag.write("/height_mapping/globalmap/gridmap", ros::Time::now(),
-              gridmap_msg);
-    bag.close();
+    // Save GridMap to bag
+    mapWriter_.writeToBag(globalMapping_->getHeightMap(), bagSavePath_,
+                          "/height_mapping/globalmap/gridmap");
 
-    // Save PointCloud to PCD
-    std::string pcd_path =
-        bagSavePath_.substr(0, bagSavePath_.find_last_of('.')) + ".pcd";
-    sensor_msgs::PointCloud2 cloud_msg;
-    std::vector<std::string> layers =
-        globalMapping_->getHeightMap().getLayers();
-    toPointCloud2(globalMapping_->getHeightMap(), layers,
-                  globalMapping_->getMeasuredGridIndices(), cloud_msg);
-
-    pcl::PCLPointCloud2 pcl_cloud;
-    pcl_conversions::toPCL(cloud_msg, pcl_cloud);
-    pcl::io::savePCDFile(pcd_path, pcl_cloud);
+    // Save GridMap to PCD
+    mapWriter_.writeToPCD(globalMapping_->getHeightMap(),
+                          bagSavePath_.substr(0, bagSavePath_.rfind('.')) +
+                              ".pcd");
 
     std::cout << "\033[1;33m[HeightMapping::GlobalMapping]: Successfully saved "
               << "map to " << bagSavePath_ << "\033[0m\n";

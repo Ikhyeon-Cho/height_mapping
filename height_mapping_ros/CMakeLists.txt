@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
     pcl_conversions
     height_mapping_core
     height_mapping_msgs
+    height_mapping_io
 )
 catkin_package(
   INCLUDE_DIRS 
@@ -20,6 +21,7 @@ catkin_package(
     pcl_conversions
     height_mapping_core
     height_mapping_msgs
+    height_mapping_io
 )
 
 ###########

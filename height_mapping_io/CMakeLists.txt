@@ -4,7 +4,12 @@ add_compile_options(-std=c++14)
 
 find_package(PCL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
-    height_mapping_core
+  roscpp
+  grid_map_ros
+  grid_map_msgs
+  pcl_ros
+  pcl_conversions
+  rosbag
 )
 
 catkin_package(
@@ -12,8 +17,15 @@ catkin_package(
     include
   LIBRARIES 
     ${PROJECT_NAME}
-  CATKIN_DEPENDS 
-    height_mapping_core
+  CATKIN_DEPENDS
+    roscpp
+    grid_map_ros
+    grid_map_msgs
+    pcl_ros
+    pcl_conversions
+    rosbag
+  DEPENDS
+    PCL
 )
 
 ###########
@@ -29,12 +41,13 @@ include_directories(
 
 link_directories(${PCL_LIBRARY_DIRS})
 
-# add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME}
+  src/HeightMapReader.cpp
+  src/HeightMapWriter.cpp
+)
 
-# )
-
-# target_link_libraries(${PROJECT_NAME}
-#   ${PCL_LIBRARIES}
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+)
 

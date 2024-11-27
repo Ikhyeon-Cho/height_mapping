@@ -9,15 +9,15 @@
 
 #pragma once
 
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <std_srvs/Empty.h>
-
 #include <grid_map_cv/GridMapCvConverter.hpp>
 #include <grid_map_ros/GridMapRosConverter.hpp>
 #include <pcl_conversions/pcl_conversions.h>
+#include <ros/ros.h>
+#include <rosbag/bag.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/Empty.h>
 
+#include "height_mapping_io/height_mapping_io.h"
 #include "height_mapping_ros/CloudTypes.h"
 #include "height_mapping_ros/GlobalMapping.h"
 #include "utils/pointcloud.h"
@@ -83,6 +83,7 @@ private:
 
   // Core mapping object
   std::unique_ptr<GlobalMapping> globalMapping_;
+  HeightMapWriter mapWriter_;
 
   // State variables
   bool laserReceived_{false};
