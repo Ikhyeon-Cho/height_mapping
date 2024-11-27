@@ -220,6 +220,15 @@ bool GlobalMappingNode::clearMapCallback(std_srvs::Empty::Request &req,
 bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
                                         std_srvs::Empty::Response &res) {
   try {
+    // Folder check and creation
+    std::filesystem::path save_path(bagSavePath_);
+    std::filesystem::path save_dir =
+        save_path.has_extension() ? save_path.parent_path() : save_path;
+
+    if (!std::filesystem::exists(save_dir)) {
+      std::filesystem::create_directories(save_dir);
+    }
+
     // Save GridMap to bag
     mapWriter_.writeToBag(globalMapping_->getHeightMap(), bagSavePath_,
                           "/height_mapping/globalmap/gridmap");
