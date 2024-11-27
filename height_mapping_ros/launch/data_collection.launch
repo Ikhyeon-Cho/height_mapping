@@ -1,0 +1,28 @@
+<!-- 
+  Launch file for data collection
+  - Data collection node for processing sensor data and global map
+-->
+<launch>
+  <arg name="debug_mode" default="false" />
+
+  <group ns="height_mapping">
+    <!-- Load parameters -->
+    <rosparam file="$(find height_mapping)/config/params.yaml" command="load" subst_value="true" />
+
+    <!-- Data Collection node -->
+    <node pkg="height_mapping" type="data_collection_node" name="data_collection" output="screen">
+      <param name="debugMode" value="$(arg debug_mode)" />
+    </node>
+
+    <!-- Use grid_map_visualization package for map visualization -->
+    <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="log">
+      <rosparam file="$(find height_mapping)/config/visualization.yaml" />
+    </node>
+
+    <!-- Rviz -->
+    <include file="$(find height_mapping)/launch/include/rviz.launch.xml">
+      <arg name="global_mapping" value="true" />
+    </include>
+  </group>
+
+</launch>

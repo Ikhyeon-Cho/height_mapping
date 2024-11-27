@@ -7,6 +7,7 @@
 
 #include "height_mapping_ros/CloudTypes.h"
 #include "utils/TransformHandler.h"
+#include "utils/pointcloud.h"
 
 class DataCollectionNode {
 public:
@@ -20,7 +21,7 @@ private:
   void setupROSInterface();
 
   void loadGlobalMap();
-  void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg);
+  void laserCallback(const sensor_msgs::PointCloud2Ptr &msg);
   void updateRobotPose(const ros::TimerEvent &event);
 
   // ROS members
@@ -38,6 +39,7 @@ private:
 
   // Publishers
   ros::Publisher pubLocalDenseMap_;
+  ros::Publisher pubScan_;
 
   // Timer
   ros::Timer poseUpdateTimer_;
@@ -47,11 +49,17 @@ private:
   grid_map::GridMap map_;
   HeightMapReader mapReader_;
 
+  // Collected Data
+
+
+
   // Parameters
   std::string subCloudTopic_;
   double poseUpdateRate_;
-  std::string globalMapPath_;
-  std::string dataCollectionPath_;
+  std::string globalMapPath_{"/home/ikhyeon/ros/dev_ws/src/height_mapping/"
+                             "height_mapping_ros/maps/globalmap.bag"};
+  std::string dataCollectionPath_{"/home/ikhyeon/ros/dev_ws/src/height_mapping/"
+                                  "height_mapping_ros/maps/"};
 
   // State tracking
   bool cloudReceived_{false};
