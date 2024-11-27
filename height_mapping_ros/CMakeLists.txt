@@ -68,3 +68,13 @@ target_link_libraries(global_mapping_node
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
 )
+
+# Data collection node
+add_executable(data_collection_node 
+  src/executables/data_collection_main.cpp
+  src/nodes/DataCollectionNode.cpp
+)
+target_link_libraries(data_collection_node
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)

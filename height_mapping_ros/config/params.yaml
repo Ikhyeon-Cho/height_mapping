@@ -30,3 +30,9 @@ sensor_processor:
   downsamplingResolution: 0.02 # [m/voxel]
   minRangeThreshold: 0.3
   maxRangeThreshold: 15.0
+
+data_collection:
+  lidarCloudTopic: "/velodyne/points"
+  poseUpdateRate: 10.0
+  globalMapPath: "$(find height_mapping)/height_mapping_ros/maps/globalmap.bag"
+  dataCollectionPath: "$(find height_mapping)/height_mapping_ros/maps/"
