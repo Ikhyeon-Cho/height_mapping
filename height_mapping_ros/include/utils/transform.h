@@ -95,6 +95,32 @@ static Eigen::Affine3d toAffine3d(const geometry_msgs::Transform &transform) {
 
   return transform_eigen;
 }
+
+/// @brief Combines two transforms (A->B and B->C) to get transform A->C
+/// @param transform1 Transform from frame A to B
+/// @param transform2 Transform from frame B to C
+/// @return Combined transform from frame A to C
+static geometry_msgs::TransformStamped
+combineTransforms(const geometry_msgs::TransformStamped &transform1,
+                  const geometry_msgs::TransformStamped &transform2) {
+  // Convert TransformStamped messages to tf2::Transform
+  tf2::Transform tf2_transform1;
+  tf2::Transform tf2_transform2;
+  tf2::fromMsg(transform1.transform, tf2_transform1);
+  tf2::fromMsg(transform2.transform, tf2_transform2);
+
+  // Multiply the transforms
+  tf2::Transform tf2_combined = tf2_transform2 * tf2_transform1;
+
+  // Convert back to TransformStamped
+  geometry_msgs::TransformStamped combined;
+  combined.transform = tf2::toMsg(tf2_combined);
+  combined.header.frame_id = transform2.header.frame_id; // frame C
+  combined.child_frame_id = transform1.child_frame_id;   // frame A
+  combined.header.stamp = transform2.header.stamp;       // use latest timestamp
+
+  return combined;
+}
 } // namespace tf
 } // namespace utils
 

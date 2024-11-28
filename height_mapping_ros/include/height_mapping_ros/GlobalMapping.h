@@ -52,8 +52,8 @@ public:
 
   template <typename PointT> void mapping(const pcl::PointCloud<PointT> &cloud);
 
-  void raycastCorrection(const pcl::PointCloud<Laser> &cloud,
-                         const Eigen::Affine3d &sensor_transform);
+  void raycasting(const Eigen::Vector3f &sensorOrigin,
+                  const pcl::PointCloud<Laser> &cloud);
 
   void clearMap();
 
@@ -73,5 +73,6 @@ private:
   Parameters params_;
 
   std::unordered_set<grid_map::Index> measured_indices_;
-  height_mapping::HeightEstimatorBase::Ptr height_estimator_;
+  height_mapping::HeightEstimatorBase::Ptr heightEstimator_;
+  height_mapping::HeightMapRaycaster raycaster_;
 };

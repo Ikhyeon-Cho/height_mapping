@@ -65,12 +65,16 @@ public:
                         typename pcl::PointCloud<PointT>::Ptr &filtered_cloud);
   template <typename PointT>
   typename pcl::PointCloud<PointT>::Ptr
-  mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-          const Eigen::Affine3d &transform);
+  mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud);
 
+  /*
+   * Correct heightmap using raycasting
+   * @param pointcloud: pointcloud for raycasting [ref: map frame]
+   * @param sensorOrigin: sensor origin [ref: map frame]
+   */
   template <typename PointT>
-  void raycastCorrection(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-                         const Eigen::Affine3d &transform);
+  void raycasting(const Eigen::Vector3f &sensorOrigin,
+                  const typename pcl::PointCloud<PointT>::Ptr &cloud);
 
   void updateMapOrigin(const grid_map::Position &position);
 

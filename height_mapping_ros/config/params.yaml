@@ -9,9 +9,9 @@ map:
   gridResolution: 0.1 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
   mapLengthX: 15.0
   mapLengthY: 15.0
-  heightEstimatorType: "KalmanFilter" # "StatMean", "KalmanFilter", "MovingAverage"
+  heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
   minHeightThreshold: -0.2 # indoor: -0.05, outdoor: -0.2 [meter]
-  maxHeightThreshold: 2.0
+  maxHeightThreshold: 1.7
 
 globalmap:
   gridResolution: 0.1

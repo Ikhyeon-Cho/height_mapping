@@ -61,7 +61,6 @@ private:
 
   // Core height mapping implementation
   std::unique_ptr<HeightMapping> heightMapping_;
-  
   utils::TransformHandler tf_;
 
   // Parameters
@@ -75,5 +74,5 @@ private:
   bool laserReceived_{false};
   bool rgbReceived_{false};
   bool useLidarCallback_{true};
-  bool removeRemoterPoints_{false};
+  bool removeRemoterPoints_{true};
 };

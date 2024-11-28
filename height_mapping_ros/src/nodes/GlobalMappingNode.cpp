@@ -90,14 +90,13 @@ void GlobalMappingNode::laserCloudCallback(
   pcl::moveFromROSMsg(*msg, cloud);
   globalMapping_->mapping(cloud);
 
-  // sensor to map
-  auto [success, sensor2Map] = tf_.getTransform(baselinkFrame_, mapFrame_);
-  if (!success) {
+  auto [get, laser2Map] = tf_.getTransform("velodyne", mapFrame_); // TODO
+  if (!get)
     return;
-  }
-  // to eigen
-  auto sensorTransform = utils::tf::toAffine3d(sensor2Map.transform);
-  // globalMapping_->raycastCorrection(cloud, sensorTransform);
+  Eigen::Vector3f laserPosition3D(laser2Map.transform.translation.x,
+                                  laser2Map.transform.translation.y,
+                                  laser2Map.transform.translation.z);
+  globalMapping_->raycasting(laserPosition3D, cloud);
 }
 
 void GlobalMappingNode::rgbCloudCallback(
@@ -149,12 +148,8 @@ void GlobalMappingNode::toPointCloud2(
       fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
     } else if (layer == "color") {
       fieldNames.push_back("rgb");
-    } else if (layer == "intensity") {
-      fieldNames.push_back("intensity");
-    } else if (layer == "variance") {
-      fieldNames.push_back("variance");
     } else {
-      continue;
+      fieldNames.push_back(layer);
     }
   }
 

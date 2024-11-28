@@ -114,26 +114,16 @@ typename pcl::PointCloud<PointT>::Ptr HeightMapping::griddedFilterWithMaxHeight(
 
 template <typename PointT>
 typename pcl::PointCloud<PointT>::Ptr
-HeightMapping::mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-                       const Eigen::Affine3d &transform) {
-
-  // 0. Range filter
-  auto rangeFilteredCloud = utils::pcl::filterPointcloudByRange2D<PointT>(
-      cloud, -params_.mapLengthX, params_.mapLengthX);
+HeightMapping::mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud) {
 
   // 1. Sample pointcloud with max height in each grid cell
-  auto griddedCloud = griddedFilterWithMaxHeight<PointT>(
-      rangeFilteredCloud, params_.gridResolution);
+  auto griddedCloud =
+      griddedFilterWithMaxHeight<PointT>(cloud, params_.gridResolution);
 
-  // 2. transform
-  auto transformedCloud = boost::make_shared<pcl::PointCloud<PointT>>();
-  pcl::transformPointCloud(*griddedCloud, *transformedCloud, transform);
-  transformedCloud->header.frame_id = params_.mapFrame;
+  // 2. estimate height
+  heightEstimator_->estimate(map_, *griddedCloud);
 
-  // 3. estimate height
-  heightEstimator_->estimate(map_, *transformedCloud);
-
-  return transformedCloud;
+  return griddedCloud;
 }
 
 void HeightMapping::updateMapOrigin(const grid_map::Position &position) {
@@ -141,10 +131,10 @@ void HeightMapping::updateMapOrigin(const grid_map::Position &position) {
 }
 
 template <typename PointT>
-void HeightMapping::raycastCorrection(
-    const typename pcl::PointCloud<PointT>::Ptr &cloud,
-    const Eigen::Affine3d &transform) {
-  raycaster_.correctHeight(map_, *cloud, transform.translation().cast<float>());
+void HeightMapping::raycasting(
+    const Eigen::Vector3f &sensorOrigin,
+    const typename pcl::PointCloud<PointT>::Ptr &cloud) {
+  raycaster_.correctHeight(map_, *cloud, sensorOrigin);
 }
 
 const grid_map::HeightMap &HeightMapping::getHeightMap() const { return map_; }
@@ -162,12 +152,11 @@ HeightMapping::griddedFilterWithMaxHeight<Laser>(
     const pcl::PointCloud<Laser>::Ptr &cloud, float gridSize);
 
 template typename pcl::PointCloud<Laser>::Ptr
-HeightMapping::mapping<Laser>(const pcl::PointCloud<Laser>::Ptr &cloud,
-                              const Eigen::Affine3d &transform);
+HeightMapping::mapping<Laser>(const pcl::PointCloud<Laser>::Ptr &cloud);
 
-template void HeightMapping::raycastCorrection<Laser>(
-    const typename pcl::PointCloud<Laser>::Ptr &cloud,
-    const Eigen::Affine3d &transform);
+template void HeightMapping::raycasting<Laser>(
+    const Eigen::Vector3f &sensorOrigin,
+    const typename pcl::PointCloud<Laser>::Ptr &cloud);
 
 // Color
 template pcl::PointCloud<Color>::Ptr
@@ -179,9 +168,8 @@ template void HeightMapping::fastHeightFilter<Color>(
     typename pcl::PointCloud<Color>::Ptr &filtered_cloud);
 
 template typename pcl::PointCloud<Color>::Ptr
-HeightMapping::mapping<Color>(const pcl::PointCloud<Color>::Ptr &cloud,
-                              const Eigen::Affine3d &transform);
+HeightMapping::mapping<Color>(const pcl::PointCloud<Color>::Ptr &cloud);
 
-template void HeightMapping::raycastCorrection<Color>(
-    const typename pcl::PointCloud<Color>::Ptr &cloud,
-    const Eigen::Affine3d &transform);
+template void HeightMapping::raycasting<Color>(
+    const Eigen::Vector3f &sensorOrigin,
+    const typename pcl::PointCloud<Color>::Ptr &cloud);
