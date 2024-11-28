@@ -89,6 +89,15 @@ void GlobalMappingNode::laserCloudCallback(
   pcl::PointCloud<Laser> cloud;
   pcl::moveFromROSMsg(*msg, cloud);
   globalMapping_->mapping(cloud);
+
+  // sensor to map
+  auto [success, sensor2Map] = tf_.getTransform(baselinkFrame_, mapFrame_);
+  if (!success) {
+    return;
+  }
+  // to eigen
+  auto sensorTransform = utils::tf::toAffine3d(sensor2Map.transform);
+  // globalMapping_->raycastCorrection(cloud, sensorTransform);
 }
 
 void GlobalMappingNode::rgbCloudCallback(
@@ -136,7 +145,7 @@ void GlobalMappingNode::toPointCloud2(
   fieldNames.reserve(layers.size());
 
   for (const auto &layer : layers) {
-    if (layer == map.getHeightLayer()) {
+    if (layer == grid_map::HeightMap::CoreLayers::ELEVATION) {
       fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
     } else if (layer == "color") {
       fieldNames.push_back("rgb");
@@ -184,7 +193,8 @@ void GlobalMappingNode::toPointCloud2(
   size_t valid_points = 0;
   for (const auto &index : measured_indices) {
     grid_map::Position3 position;
-    if (!map.getPosition3(map.getHeightLayer(), index, position)) {
+    if (!map.getPosition3(grid_map::HeightMap::CoreLayers::ELEVATION, index,
+                          position)) {
       continue;
     }
 

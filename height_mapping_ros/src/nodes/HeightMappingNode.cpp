@@ -64,14 +64,12 @@ void HeightMappingNode::setupROSInterface() {
     subLaserCloud_ = nh_.subscribe(
         subLaserTopic_, 1, &HeightMappingNode::laserCloudCallback, this);
   }
-
   subRGBCloud_ = nh_.subscribe(subRGBTopic_, 1,
                                &HeightMappingNode::rgbCloudCallback, this);
 
   // Publishers
   pubHeightMap_ =
       nh_.advertise<grid_map_msgs::GridMap>("/height_mapping/map/gridmap", 1);
-
   pubLaserProcessed_ = nh_.advertise<sensor_msgs::PointCloud2>(
       "/height_mapping/mapping/lasercloud", 1);
   pubRGBProcessed_ = nh_.advertise<sensor_msgs::PointCloud2>(
@@ -136,9 +134,15 @@ void HeightMappingNode::laserCloudCallback(
   }
 
   // Mapping
-  auto transform = utils::tf::toAffine3d(baselink2Map.transform);
-  auto mappedLaserCloud =
-      heightMapping_->mapping<Laser>(processedCloud, transform);
+  auto mappedLaserCloud = heightMapping_->mapping<Laser>(
+      processedCloud, utils::tf::toAffine3d(baselink2Map.transform));
+
+  // Add raycasting correction
+  auto [get3, sensor2Map] = tf_.getTransform(laserFrame, mapFrame_);
+  if (!get3)
+    return;
+  auto sensorTransform = utils::tf::toAffine3d(sensor2Map.transform);
+  heightMapping_->raycastCorrection<Laser>(mappedLaserCloud, sensorTransform);
 
   // Publish pointcloud used for mapping
   sensor_msgs::PointCloud2 cloudMsg;
@@ -191,6 +195,12 @@ void HeightMappingNode::rgbCloudCallback(
   auto transform = utils::tf::toAffine3d(baselink2Map.transform);
   auto mappedRGBCloud =
       heightMapping_->mapping<Color>(processedCloud, transform);
+
+  // Add raycasting correction
+  auto laserCloud = boost::make_shared<pcl::PointCloud<Laser>>();
+  pcl::copyPointCloud(*mappedRGBCloud,
+                      *laserCloud); // Convert Color to Laser type
+  // heightMapping_->raycastCorrection<Laser>(laserCloud, transform);
 
   // Publish pointcloud used for mapping
   sensor_msgs::PointCloud2 cloudMsg;

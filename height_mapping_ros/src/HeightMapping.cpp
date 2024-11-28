@@ -45,27 +45,27 @@ void HeightMapping::initHeightEstimator() {
   // - StatMean (by default)
 
   if (params_.heightEstimatorType == "KalmanFilter") {
-    height_estimator_ = std::make_unique<height_mapping::KalmanEstimator>();
+    heightEstimator_ = std::make_unique<height_mapping::KalmanEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> KalmanFilter \033[0m\n";
 
   } else if (params_.heightEstimatorType == "MovingAverage") {
-    height_estimator_ =
+    heightEstimator_ =
         std::make_unique<height_mapping::MovingAverageEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> MovingAverage \033[0m\n";
 
   } else if (params_.heightEstimatorType == "StatMean") {
-    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
+    heightEstimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping]: Height estimator "
                  "type --> StatisticalMeanEstimator "
                  "\033[0m\n";
 
   } else {
-    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
+    heightEstimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
 
     std::cout << "\033[1;33m[HeightMapping::HeightMapping] Invalid height "
                  "estimator type. Set Default: StatMeanEstimator \033[0m\n";
@@ -119,7 +119,7 @@ HeightMapping::mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
 
   // 0. Range filter
   auto rangeFilteredCloud = utils::pcl::filterPointcloudByRange2D<PointT>(
-      cloud, -params_.mapLengthX * 0.5, params_.mapLengthX * 0.5);
+      cloud, -params_.mapLengthX, params_.mapLengthX);
 
   // 1. Sample pointcloud with max height in each grid cell
   auto griddedCloud = griddedFilterWithMaxHeight<PointT>(
@@ -131,7 +131,7 @@ HeightMapping::mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
   transformedCloud->header.frame_id = params_.mapFrame;
 
   // 3. estimate height
-  height_estimator_->estimate(map_, *transformedCloud);
+  heightEstimator_->estimate(map_, *transformedCloud);
 
   return transformedCloud;
 }
@@ -140,13 +140,14 @@ void HeightMapping::updateMapOrigin(const grid_map::Position &position) {
   map_.move(position);
 }
 
-const grid_map::HeightMap &HeightMapping::getHeightMap() const { return map_; }
-
-void HeightMapping::addBasicLayer(const std::string &layer) {
-  auto basic_layers = map_.getBasicLayers();
-  basic_layers.insert(basic_layers.end(), {layer});
-  map_.setBasicLayers(basic_layers);
+template <typename PointT>
+void HeightMapping::raycastCorrection(
+    const typename pcl::PointCloud<PointT>::Ptr &cloud,
+    const Eigen::Affine3d &transform) {
+  raycaster_.correctHeight(map_, *cloud, transform.translation().cast<float>());
 }
+
+const grid_map::HeightMap &HeightMapping::getHeightMap() const { return map_; }
 
 //////////////////////////////////////////////////
 // Explicit instantiation of template functions //
@@ -163,6 +164,11 @@ HeightMapping::griddedFilterWithMaxHeight<Laser>(
 template typename pcl::PointCloud<Laser>::Ptr
 HeightMapping::mapping<Laser>(const pcl::PointCloud<Laser>::Ptr &cloud,
                               const Eigen::Affine3d &transform);
+
+template void HeightMapping::raycastCorrection<Laser>(
+    const typename pcl::PointCloud<Laser>::Ptr &cloud,
+    const Eigen::Affine3d &transform);
+
 // Color
 template pcl::PointCloud<Color>::Ptr
 HeightMapping::griddedFilterWithMaxHeight<Color>(
@@ -175,3 +181,7 @@ template void HeightMapping::fastHeightFilter<Color>(
 template typename pcl::PointCloud<Color>::Ptr
 HeightMapping::mapping<Color>(const pcl::PointCloud<Color>::Ptr &cloud,
                               const Eigen::Affine3d &transform);
+
+template void HeightMapping::raycastCorrection<Color>(
+    const typename pcl::PointCloud<Color>::Ptr &cloud,
+    const Eigen::Affine3d &transform);

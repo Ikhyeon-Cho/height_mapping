@@ -61,6 +61,8 @@ private:
   std::string dataCollectionPath_{"/home/ikhyeon/ros/dev_ws/src/height_mapping/"
                                   "height_mapping_ros/maps/"};
 
+  unsigned int scanCount_{0};
+
   // State tracking
   bool cloudReceived_{false};
   struct PoseData {

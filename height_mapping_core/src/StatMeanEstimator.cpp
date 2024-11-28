@@ -9,45 +9,84 @@
 
 #include "height_mapping_core/height_estimators/StatMeanEstimator.h"
 
+/*
+StatMeanEstimator tracks:
+- elevation
+- elevation_min
+- elevation_max
+- variance
+- n_measured
+- intensity (if available)
+- color (if available)
+*/
 namespace height_mapping {
+
 void StatMeanEstimator::estimate(grid_map::HeightMap &map,
                                  const pcl::PointCloud<pcl::PointXYZ> &cloud) {
   if (hasEmptyCloud(cloud))
     return;
 
   if (cloud.header.frame_id != map.getFrameId()) {
-    std::cout << "[HeightEstimator]: Frame ID mismatch - pointcloud is in a "
-                 "different frame! \n";
+    std::cout << "\033[0;31m[HeightEstimator]: Frame ID mismatch - pointcloud "
+                 "is in a different frame! \033[0m\n";
     return;
   }
 
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+
   map.addLayer("n_measured", 0.0);
+  auto &numMeasuredMatrix = map["n_measured"];
 
-  auto &height_matrix = map.getHeightMatrix();
-  auto &variance_matrix = map.getVarianceMatrix();
-  auto &n_measured_matrix = map["n_measured"];
+  map.addLayer("standard_error");
+  auto &standardErrorMatrix = map["standard_error"];
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
+  map.addLayer("confidence_interval");
+  auto &confidenceIntervalMatrix = map["confidence_interval"];
+
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
+
+  for (const auto &newPoint : cloud) {
     // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &variance = variance_matrix(cell_index(0), cell_index(1));
-    auto &n_measured = n_measured_matrix(cell_index(0), cell_index(1));
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
+    auto &standardError =
+        standardErrorMatrix(measuredIndex(0), measuredIndex(1));
+    auto &confidenceInterval =
+        confidenceIntervalMatrix(measuredIndex(0), measuredIndex(1));
 
-    // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      variance = 0.0f;
-      n_measured = 1.0f;
+    // Initialize the height and variance if empty (NaN values)
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      minHeight = newPoint.z;
+      maxHeight = newPoint.z;
+      variance = 0.0f; // Single measurement -> no variance
+      nPoints = 1;
+      standardError = 2.0f; // Assume max error
+      confidenceInterval = 2.0f;
       continue;
     }
 
-    updateStats(height, variance, n_measured, point.z);
+    ++nPoints;
+
+    // Height estimates
+    updateHeightStats(height, variance, nPoints, newPoint.z);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
+
+    // Statistics
+    standardError = getStandardError(nPoints, variance);
+    confidenceInterval = getConfidenceInterval(nPoints, variance);
   }
 }
 
@@ -57,44 +96,74 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
     return;
 
   if (cloud.header.frame_id != map.getFrameId()) {
-    std::cout << "[HeightEstimator]: Frame ID mismatch - pointcloud is in a "
-                 "different frame! \n";
+    std::cout << "\033[0;31m[HeightEstimator]: Frame ID mismatch - pointcloud "
+                 "is in a different frame! \033[0m\n";
     return;
   }
 
-  map.addLayer("intensity");
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+
   map.addLayer("n_measured", 0.0);
+  auto &numMeasuredMatrix = map["n_measured"];
 
-  auto &height_matrix = map.getHeightMatrix();
-  auto &variance_matrix = map.getVarianceMatrix();
-  auto &n_measured_matrix = map["n_measured"];
+  map.addLayer("intensity");
+  auto &intensityMatrix = map["intensity"];
 
-  auto &intensity_matrix = map["intensity"];
+  map.addLayer("standard_error");
+  auto &standardErrorMatrix = map["standard_error"];
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
+  map.addLayer("confidence_interval");
+  auto &confidenceIntervalMatrix = map["confidence_interval"];
+
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
+
+  for (const auto &newPoint : cloud) {
     // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &variance = variance_matrix(cell_index(0), cell_index(1));
-    auto &n_measured = n_measured_matrix(cell_index(0), cell_index(1));
-    auto &intensity = intensity_matrix(cell_index(0), cell_index(1));
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
+    auto &intensity = intensityMatrix(measuredIndex(0), measuredIndex(1));
+    auto &standardError =
+        standardErrorMatrix(measuredIndex(0), measuredIndex(1));
+    auto &confidenceInterval =
+        confidenceIntervalMatrix(measuredIndex(0), measuredIndex(1));
 
-    // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      variance = 0.0f;
-      n_measured = 1.0f;
-      intensity = point.intensity;
+    // Initialize the height and variance if empty (NaN values)
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      minHeight = newPoint.z;
+      maxHeight = newPoint.z;
+      variance = 0.0f; // Single measurement -> no variance
+      nPoints = 1;
+      intensity = newPoint.intensity;
+      standardError = 2.0f; // Assume max error
+      confidenceInterval = 2.0f;
       continue;
     }
 
-    updateStats(height, variance, n_measured, point.z);
-    updateStats(intensity, variance, n_measured, point.intensity);
+    ++nPoints;
+
+    // Height estimates
+    updateHeightStats(height, variance, nPoints, newPoint.z);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
+
+    // Statistics
+    standardError = getStandardError(nPoints, variance);
+    confidenceInterval = getConfidenceInterval(nPoints, variance);
+
+    // Intensity
+    meanFilter(intensity, nPoints, newPoint.intensity);
   }
 }
 
@@ -104,68 +173,95 @@ void StatMeanEstimator::estimate(
     return;
 
   if (cloud.header.frame_id != map.getFrameId()) {
-    std::cout << "[HeightEstimator]: Frame ID mismatch - pointcloud is in a "
-                 "different frame! \n";
+    std::cout << "\033[0;31m[HeightEstimator]: Frame ID mismatch - pointcloud "
+                 "is in a different frame! \033[0m\n";
     return;
   }
+
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+
+  map.addLayer("n_measured", 0.0);
+  auto &numMeasuredMatrix = map["n_measured"];
+
+  map.addLayer("standard_error");
+  auto &standardErrorMatrix = map["standard_error"];
+
+  map.addLayer("confidence_interval");
+  auto &confidenceIntervalMatrix = map["confidence_interval"];
 
   map.addLayer("r");
   map.addLayer("g");
   map.addLayer("b");
   map.addLayer("color");
-  map.addLayer("n_measured", 0.0);
-
-  auto &height_matrix = map.getHeightMatrix();
-  auto &variance_matrix = map.getVarianceMatrix();
-  auto &n_measured_matrix = map["n_measured"];
-
   auto &r_matrix = map["r"];
   auto &g_matrix = map["g"];
   auto &b_matrix = map["b"];
   auto &color_matrix = map["color"];
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
+
+  for (const auto &newPoint : cloud) {
     // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &variance = variance_matrix(cell_index(0), cell_index(1));
-    auto &n_measured = n_measured_matrix(cell_index(0), cell_index(1));
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
+    auto &standardError =
+        standardErrorMatrix(measuredIndex(0), measuredIndex(1));
+    auto &confidenceInterval =
+        confidenceIntervalMatrix(measuredIndex(0), measuredIndex(1));
 
-    auto &r = r_matrix(cell_index(0), cell_index(1));
-    auto &g = g_matrix(cell_index(0), cell_index(1));
-    auto &b = b_matrix(cell_index(0), cell_index(1));
-    auto &color = color_matrix(cell_index(0), cell_index(1));
+    auto &r = r_matrix(measuredIndex(0), measuredIndex(1));
+    auto &g = g_matrix(measuredIndex(0), measuredIndex(1));
+    auto &b = b_matrix(measuredIndex(0), measuredIndex(1));
+    auto &color = color_matrix(measuredIndex(0), measuredIndex(1));
 
-    // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      variance = 0.0f;
-      n_measured = 1.0f;
-
-      r = point.r;
-      g = point.g;
-      b = point.b;
-      grid_map::colorVectorToValue(point.getRGBVector3i(), color);
-
+    // Initialize the height and variance if empty (NaN values)
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      minHeight = newPoint.z;
+      maxHeight = newPoint.z;
+      variance = 0.0f; // Single measurement -> no variance
+      nPoints = 1;
+      r = newPoint.r;
+      g = newPoint.g;
+      b = newPoint.b;
+      grid_map::colorVectorToValue(newPoint.getRGBVector3i(), color);
+      standardError = 2.0f; // Assume max error
+      confidenceInterval = 2.0f;
       continue;
     }
 
+    // Update the color if it is NaN
     if (!std::isfinite(r) || !std::isfinite(g) || !std::isfinite(b)) {
-      r = point.r;
-      g = point.g;
-      b = point.b;
+      r = newPoint.r;
+      g = newPoint.g;
+      b = newPoint.b;
     }
 
-    ++n_measured;
-    updateStats(height, variance, n_measured, point.z);
-    updateMean(r, n_measured, point.r);
-    updateMean(g, n_measured, point.g);
-    updateMean(b, n_measured, point.b);
+    ++nPoints;
+    // Height estimates
+    updateHeightStats(height, variance, nPoints, newPoint.z);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
+
+    // Statistics
+    standardError = getStandardError(nPoints, variance);
+    confidenceInterval = getConfidenceInterval(nPoints, variance);
+
+    // Color update
+    meanFilter(r, nPoints, newPoint.r);
+    meanFilter(g, nPoints, newPoint.g);
+    meanFilter(b, nPoints, newPoint.b);
     grid_map::colorVectorToValue(Eigen::Vector3i(r, g, b), color);
   }
 }

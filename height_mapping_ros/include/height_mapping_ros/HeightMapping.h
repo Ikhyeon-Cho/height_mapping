@@ -68,10 +68,13 @@ public:
   mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud,
           const Eigen::Affine3d &transform);
 
+  template <typename PointT>
+  void raycastCorrection(const typename pcl::PointCloud<PointT>::Ptr &cloud,
+                         const Eigen::Affine3d &transform);
+
   void updateMapOrigin(const grid_map::Position &position);
 
   const grid_map::HeightMap &getHeightMap() const;
-  void addBasicLayer(const std::string &layer);
 
 private:
   void paramValidityCheck();
@@ -92,9 +95,12 @@ private:
     }
   };
 
-  grid_map::HeightMap map_{10, 10, 0.1};
+  grid_map::HeightMap map_;
   Parameters params_;
 
   FastHeightFilter heightFilter_;
-  height_mapping::HeightEstimatorBase::Ptr height_estimator_;
+  height_mapping::HeightEstimatorBase::Ptr heightEstimator_;
+  height_mapping::HeightMapRaycaster raycaster_;
+
+  float correction_threshold_{0.15f};
 };

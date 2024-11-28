@@ -10,8 +10,10 @@
 #include "height_mapping_core/height_estimators/KalmanEstimator.h"
 
 namespace height_mapping {
+
 void KalmanEstimator::estimate(grid_map::HeightMap &map,
                                const pcl::PointCloud<pcl::PointXYZ> &cloud) {
+
   if (hasEmptyCloud(cloud))
     return;
 
@@ -21,34 +23,49 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
     return;
   }
 
-  auto &height_matrix = map.getHeightMatrix();
-  auto &variance_matrix = map.getVarianceMatrix();
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
-    // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+  map.addLayer("confidence", 0.0f);
+  auto &confidenceMatrix = map["confidence"];
+
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
+
+  for (const auto &newPoint : cloud) {
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &variance = variance_matrix(cell_index(0), cell_index(1));
-    auto point_variance = getPointVariance(point);
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
 
-    // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      variance = point_variance;
+    const Eigen::Vector3f pointVec(newPoint.x, newPoint.y, newPoint.z);
+    const float pointVariance = getPointVariance(pointVec);
+
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      variance = pointVariance;
+      minHeight = maxHeight = newPoint.z;
+      confidence = getConfidence(variance);
       continue;
     }
 
-    KalmanUpdate(height, variance, point.z, point_variance);
+    kalmanUpdate(height, variance, newPoint.z, pointVariance);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
+    confidence = getConfidence(variance);
   }
 }
 
 void KalmanEstimator::estimate(grid_map::HeightMap &map,
                                const pcl::PointCloud<pcl::PointXYZI> &cloud) {
+
   if (hasEmptyCloud(cloud))
     return;
 
@@ -58,40 +75,54 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
     return;
   }
 
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+
+  map.addLayer("confidence", 0.0f);
   map.addLayer("intensity");
+  auto &confidenceMatrix = map["confidence"];
+  auto &intensityMatrix = map["intensity"];
 
-  auto &height_matrix = map.getHeightMatrix();
-  auto &variance_matrix = map.getVarianceMatrix();
-  auto &intensity_matrix = map["intensity"];
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
-    // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+  for (const auto &newPoint : cloud) {
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &variance = variance_matrix(cell_index(0), cell_index(1));
-    auto &intensity = intensity_matrix(cell_index(0), cell_index(1));
-    auto point_variance = getPointVariance(point);
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &intensity = intensityMatrix(measuredIndex(0), measuredIndex(1));
 
-    // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      variance = point_variance;
-      intensity = point.intensity;
+    const Eigen::Vector3f pointVec(newPoint.x, newPoint.y, newPoint.z);
+    const float pointVariance = getPointVariance(pointVec);
+
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      variance = pointVariance;
+      minHeight = maxHeight = newPoint.z;
+      intensity = newPoint.intensity;
+      confidence = getConfidence(variance);
       continue;
     }
 
-    KalmanUpdate(height, variance, point.z, point_variance);
-    KalmanUpdate(intensity, variance, point.intensity, point_variance);
+    kalmanUpdate(height, variance, newPoint.z, pointVariance);
+    kalmanUpdate(intensity, variance, newPoint.intensity, pointVariance);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
+    confidence = getConfidence(variance);
   }
 }
 
 void KalmanEstimator::estimate(grid_map::HeightMap &map,
                                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
+
   if (hasEmptyCloud(cloud))
     return;
 
@@ -101,50 +132,63 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
     return;
   }
 
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+
+  map.addLayer("confidence", 0.0f);
   map.addLayer("r");
   map.addLayer("g");
   map.addLayer("b");
   map.addLayer("color");
+  auto &confidenceMatrix = map["confidence"];
+  auto &redMatrix = map["r"];
+  auto &greenMatrix = map["g"];
+  auto &blueMatrix = map["b"];
+  auto &colorMatrix = map["color"];
 
-  auto &height_matrix = map.getHeightMatrix();
-  auto &variance_matrix = map.getVarianceMatrix();
-  auto &red_matrix = map["r"];
-  auto &green_matrix = map["g"];
-  auto &blue_matrix = map["b"];
-  auto &color_matrix = map["color"];
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
-    // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+  for (const auto &newPoint : cloud) {
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &variance = variance_matrix(cell_index(0), cell_index(1));
-    auto &red = red_matrix(cell_index(0), cell_index(1));
-    auto &green = green_matrix(cell_index(0), cell_index(1));
-    auto &blue = blue_matrix(cell_index(0), cell_index(1));
-    auto &color = color_matrix(cell_index(0), cell_index(1));
-    auto point_variance = getPointVariance(point);
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &red = redMatrix(measuredIndex(0), measuredIndex(1));
+    auto &green = greenMatrix(measuredIndex(0), measuredIndex(1));
+    auto &blue = blueMatrix(measuredIndex(0), measuredIndex(1));
+    auto &color = colorMatrix(measuredIndex(0), measuredIndex(1));
 
-    // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      variance = point_variance;
-      red = point.r;
-      green = point.g;
-      blue = point.b;
-      grid_map::colorVectorToValue(point.getRGBVector3i(), color);
+    const Eigen::Vector3f pointVec(newPoint.x, newPoint.y, newPoint.z);
+    const float pointVariance = getPointVariance(pointVec);
+
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      variance = pointVariance;
+      minHeight = maxHeight = newPoint.z;
+      red = newPoint.r;
+      green = newPoint.g;
+      blue = newPoint.b;
+      grid_map::colorVectorToValue(newPoint.getRGBVector3i(), color);
+      confidence = getConfidence(variance);
       continue;
     }
 
-    KalmanUpdate(height, variance, point.z, point_variance);
-    KalmanUpdate(red, variance, point.r, point_variance);
-    KalmanUpdate(green, variance, point.g, point_variance);
-    KalmanUpdate(blue, variance, point.b, point_variance);
+    kalmanUpdate(height, variance, newPoint.z, pointVariance);
+    kalmanUpdate(red, variance, newPoint.r, pointVariance);
+    kalmanUpdate(green, variance, newPoint.g, pointVariance);
+    kalmanUpdate(blue, variance, newPoint.b, pointVariance);
     grid_map::colorVectorToValue(Eigen::Vector3i(red, green, blue), color);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
+    confidence = getConfidence(variance);
   }
 }
 

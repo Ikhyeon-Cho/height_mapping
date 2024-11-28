@@ -1,7 +1,7 @@
 #include "height_mapping_ros/DataCollectionNode.h"
+#include <chrono>
 #include <fstream>
 #include <tf2/utils.h>
-
 DataCollectionNode::DataCollectionNode() {
 
   getNodeParameters();
@@ -9,7 +9,7 @@ DataCollectionNode::DataCollectionNode() {
   setupROSInterface();
   getDataCollectionParameters();
 
-  loadGlobalMap();
+  // loadGlobalMap();
 
   std::cout << "\033[1;32m[HeightMapping::DataCollection]: Global map loaded! "
                "Starting data collection node...\033[0m\n";
@@ -37,7 +37,7 @@ void DataCollectionNode::setupROSInterface() {
   subCloudTopic_ = nhDataCollection_.param<std::string>("lidarCloudTopic",
                                                         "/velodyne/points");
   // Subscriber
-  subLidarScan_ = nh_.subscribe(subCloudTopic_, 1,
+  subLidarScan_ = nh_.subscribe(subCloudTopic_, 1000,
                                 &DataCollectionNode::laserCallback, this);
 
   // Publisher
@@ -72,41 +72,51 @@ void DataCollectionNode::laserCallback(const sensor_msgs::PointCloud2Ptr &msg) {
   auto transformedCloud =
       utils::pcl::transformPointcloud<Laser>(cloud, laser2Map);
 
-  // Get robot-centric heightmap
-  grid_map::Length length(15.0, 15.0);
-  grid_map::Position position(baselink2Map.transform.translation.x,
-                              baselink2Map.transform.translation.y);
-  bool isSuccess;
-  auto heightmap = map_.getSubmap(position, length, isSuccess);
-  if (!isSuccess) {
-    std::cerr << "\033[1;31m[HeightMapping::DataCollection]: Failed to get "
-                 "submap from global map! \033[0m\n";
+  // Create KITTI-style filename (6 digits with leading zeros)
+  std::stringstream ss;
+  ss << std::setw(6) << std::setfill('0') << scanCount_++;
+  std::string filename = dataCollectionPath_ + "/" + ss.str() + ".pcd";
+
+  // Save pointcloud: takes about 2ms in average
+  if (pcl::io::savePCDFileBinary(filename, *transformedCloud) == -1) {
+    ROS_ERROR_STREAM("Failed to save pointcloud to " << filename);
     return;
   }
 
-  // subtract offset: offset is heightmap origin
-  auto offset2D = heightmap.getPosition();
-  for (auto &point : transformedCloud->points) {
-    point.x -= offset2D.x();
-    point.y -= offset2D.y();
-    point.z -= baselink2Map.transform.translation.z;
-  }
-  heightmap.setPosition(grid_map::Position(0.0, 0.0));
-  // matrix operation: subtract height offset
-  heightmap["elevation"].array() -= baselink2Map.transform.translation.z;
+  // // Get robot-centric heightmap
+  // grid_map::Length length(15.0, 15.0);
+  // grid_map::Position position(baselink2Map.transform.translation.x,
+  //                             baselink2Map.transform.translation.y);
+  // bool isSuccess;
+  // auto heightmap = map_.getSubmap(position, length, isSuccess);
+  // if (!isSuccess) {
+  //   std::cerr << "\033[1;31m[HeightMapping::DataCollection]: Failed to get "
+  //                "submap from global map! \033[0m\n";
+  //   return;
+  // }
 
-  transformedCloud->header.frame_id = baselinkFrame_;
-  heightmap.setFrameId(baselinkFrame_);
+  // // subtract offset: offset is heightmap origin
+  // auto offset2D = heightmap.getPosition();
+  // for (auto &point : transformedCloud->points) {
+  //   point.x -= offset2D.x();
+  //   point.y -= offset2D.y();
+  //   point.z -= baselink2Map.transform.translation.z;
+  // }
+  // heightmap.setPosition(grid_map::Position(0.0, 0.0));
+  // heightmap["elevation"].array() -= baselink2Map.transform.translation.z;
 
-  // Publish pointcloud
-  sensor_msgs::PointCloud2 cloudMsg;
-  pcl::toROSMsg(*transformedCloud, cloudMsg);
-  pubScan_.publish(cloudMsg);
+  // transformedCloud->header.frame_id = baselinkFrame_;
+  // heightmap.setFrameId(baselinkFrame_);
 
-  // Publish heightmap
-  grid_map_msgs::GridMap heightmapMsg;
-  grid_map::GridMapRosConverter::toMessage(heightmap, heightmapMsg);
-  pubLocalDenseMap_.publish(heightmapMsg);
+  // // Publish pointcloud
+  // sensor_msgs::PointCloud2 cloudMsg;
+  // pcl::toROSMsg(*transformedCloud, cloudMsg);
+  // pubScan_.publish(cloudMsg);
+
+  // // Publish heightmap
+  // grid_map_msgs::GridMap heightmapMsg;
+  // grid_map::GridMapRosConverter::toMessage(heightmap, heightmapMsg);
+  // pubLocalDenseMap_.publish(heightmapMsg);
 }
 
 void DataCollectionNode::updateRobotPose(const ros::TimerEvent &event) {

@@ -138,7 +138,8 @@ void HeightMapConverter::fromPointCloud2(const sensor_msgs::PointCloud2 &cloud,
       continue;
     }
 
-    map.atPosition(map.getHeightLayer(), position) = *iter_z;
+    map.atPosition(grid_map::HeightMap::CoreLayers::ELEVATION, position) =
+        *iter_z;
 
     for (auto &iter_field : iterator_fields) {
       auto &[layer, iter] = iter_field;
@@ -175,15 +176,16 @@ void HeightMapConverter::fromPointCloud2(const sensor_msgs::PointCloud2 &cloud,
 void HeightMapConverter::toPointCloud2(const grid_map::HeightMap &map,
                                        sensor_msgs::PointCloud2 &cloud) {
   // Convert to PointCloud
-  grid_map::GridMapRosConverter::toPointCloud(map, map.getHeightLayer(), cloud);
+  grid_map::GridMapRosConverter::toPointCloud(
+      map, grid_map::HeightMap::CoreLayers::ELEVATION, cloud);
 }
 
 void HeightMapConverter::toPointCloud2(const grid_map::HeightMap &map,
                                        const std::vector<std::string> &layers,
                                        sensor_msgs::PointCloud2 &cloud) {
   // Convert to PointCloud
-  grid_map::GridMapRosConverter::toPointCloud(map, layers, map.getHeightLayer(),
-                                              cloud);
+  grid_map::GridMapRosConverter::toPointCloud(
+      map, layers, grid_map::HeightMap::CoreLayers::ELEVATION, cloud);
 }
 
 void HeightMapConverter::toPointCloud2(
@@ -198,7 +200,7 @@ void HeightMapConverter::toPointCloud2(
   // Fields.
   std::vector<std::string> fieldNames;
   for (const auto &layer : layers) {
-    if (layer == map.getHeightLayer()) {
+    if (layer == grid_map::HeightMap::CoreLayers::ELEVATION) {
       fieldNames.push_back("x");
       fieldNames.push_back("y");
       fieldNames.push_back("z");
@@ -244,7 +246,8 @@ void HeightMapConverter::toPointCloud2(
   int count = 0;
   for (const auto &measured_index : measured_indices) {
     grid_map::Position3 position;
-    if (!map.getPosition3(map.getHeightLayer(), measured_index, position))
+    if (!map.getPosition3(grid_map::HeightMap::CoreLayers::ELEVATION,
+                          measured_index, position))
       continue;
 
     const auto &cell_position_x = (float)position.x();

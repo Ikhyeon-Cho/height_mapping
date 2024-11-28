@@ -11,44 +11,63 @@
 #define HEIGHT_MAP_H
 
 #include <grid_map_core/grid_map_core.hpp>
-#include <iostream>
-#include <memory>
+#include <string>
 
 namespace grid_map {
+
 class HeightMap : public GridMap {
 public:
-  using Ptr = std::shared_ptr<HeightMap>;
+  // Layer names for core functionality
+  struct CoreLayers {
+    static constexpr const char *ELEVATION = "elevation";
+    static constexpr const char *ELEVATION_MIN = "elevation_min";
+    static constexpr const char *ELEVATION_MAX = "elevation_max";
+    static constexpr const char *VARIANCE = "variance";
+    static constexpr const char *N_MEASUREMENTS = "n_measured";
+  };
 
-  HeightMap(double length_x, double length_y, double grid_resolution);
+  HeightMap();
 
-  /// @brief
-  /// @return
-  bool hasHeightValue() const;
-
+  // Layer management
   void addLayer(const std::string &layer, float default_value = NAN);
-  void deleteLayer(const std::string &layer);
+  void addBasicLayer(const std::string &layer);
+  void removeLayer(const std::string &layer);
+  bool hasLayer(const std::string &layer) const { return exists(layer); }
 
-  const std::string &getHeightLayer() const;
-  const std::string &getVarianceLayer() const;
+  // Core layer accessors
+  Matrix &getHeightMatrix() { return get(CoreLayers::ELEVATION); }
+  Matrix &getMinHeightMatrix() { return get(CoreLayers::ELEVATION_MIN); }
+  Matrix &getMaxHeightMatrix() { return get(CoreLayers::ELEVATION_MAX); }
+  Matrix &getVarianceMatrix() { return get(CoreLayers::VARIANCE); }
+  Matrix &getMeasurementCountMatrix() {
+    return get(CoreLayers::N_MEASUREMENTS);
+  }
 
-  const GridMap::Matrix &getHeightMatrix() const;
-  GridMap::Matrix &getHeightMatrix();
+  // Const versions
+  const Matrix &getHeightMatrix() const { return get(CoreLayers::ELEVATION); }
+  const Matrix &getMinHeightMatrix() const {
+    return get(CoreLayers::ELEVATION_MIN);
+  }
+  const Matrix &getMaxHeightMatrix() const {
+    return get(CoreLayers::ELEVATION_MAX);
+  }
+  const Matrix &getVarianceMatrix() const { return get(CoreLayers::VARIANCE); }
+  const Matrix &getMeasurementCountMatrix() const {
+    return get(CoreLayers::N_MEASUREMENTS);
+  }
 
-  const GridMap::Matrix &getVarianceMatrix() const;
-  GridMap::Matrix &getVarianceMatrix();
+  // Cell validity checks
+  bool isEmptyAt(const Index &index) const { return !isValid(index); }
+  bool isEmptyAt(const std::string &layer, const Index &index) const {
+    return !exists(layer) || !std::isfinite(at(layer, index));
+  }
 
-  bool isEmptyAt(const Index &index) const;
-  bool isEmptyAt(const std::string &layer, const Index &index) const;
-
-  void smoothing();
-
-  float getMaxHeight() const;
+  // Height statistics
   float getMinHeight() const;
+  float getMaxHeight() const;
+  bool hasHeightValues() const;
 
-private:
-  // Basic Layers
-  std::string layer_height_{"elevation"};
-  std::string layer_variance_{"variance"};
+  bool is_initialized_{false};
 };
 
 } // namespace grid_map

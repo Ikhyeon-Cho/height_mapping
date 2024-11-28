@@ -52,9 +52,10 @@ public:
 
   template <typename PointT> void mapping(const pcl::PointCloud<PointT> &cloud);
 
-  void clearMap();
+  void raycastCorrection(const pcl::PointCloud<Laser> &cloud,
+                         const Eigen::Affine3d &sensor_transform);
 
-  void addBasicLayer(const std::string &layer);
+  void clearMap();
 
   const grid_map::HeightMap &getHeightMap() const { return globalmap_; }
   const std::unordered_set<grid_map::Index> &getMeasuredGridIndices() const {
@@ -67,7 +68,8 @@ private:
   template <typename PointT>
   void updateMeasuredGridIndices(const grid_map::HeightMap &map,
                                  const pcl::PointCloud<PointT> &cloud);
-  grid_map::HeightMap globalmap_{400, 400, 0.1};
+
+  grid_map::HeightMap globalmap_;
   Parameters params_;
 
   std::unordered_set<grid_map::Index> measured_indices_;

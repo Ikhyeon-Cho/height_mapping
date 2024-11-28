@@ -50,7 +50,7 @@ void HeightMapMsgs::toMapRegion(const grid_map::HeightMap &map,
 
 void HeightMapMsgs::toOccupancyGrid(const grid_map::HeightMap &map,
                                     nav_msgs::OccupancyGrid &msg) {
-  const auto &elevation_grid = map[map.getHeightLayer()];
+  const auto &elevation_grid = map[grid_map::HeightMap::CoreLayers::ELEVATION];
 
   // NAN processing for finding min and max
   auto fill_NAN_with_min = elevation_grid.array().isNaN().select(
@@ -62,6 +62,6 @@ void HeightMapMsgs::toOccupancyGrid(const grid_map::HeightMap &map,
   float min = fill_NAN_with_max.minCoeff();
   float max = fill_NAN_with_min.maxCoeff();
 
-  grid_map::GridMapRosConverter::toOccupancyGrid(map, map.getHeightLayer(), min,
-                                                 max, msg);
+  grid_map::GridMapRosConverter::toOccupancyGrid(
+      map, grid_map::HeightMap::CoreLayers::ELEVATION, min, max, msg);
 }
