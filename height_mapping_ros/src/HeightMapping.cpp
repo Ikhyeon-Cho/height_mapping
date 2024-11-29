@@ -95,7 +95,7 @@ typename pcl::PointCloud<PointT>::Ptr HeightMapping::griddedFilterWithMaxHeight(
     int y_index = std::floor(point.y / gridSize);
 
     auto grid_key = std::make_pair(x_index, y_index);
-    auto [iter, inserted] = grid_map.emplace(grid_key, point);
+    auto [iter, inserted] = grid_map.try_emplace(grid_key, point);
 
     if (!inserted && point.z > iter->second.z) {
       iter->second = point;
@@ -114,11 +114,59 @@ typename pcl::PointCloud<PointT>::Ptr HeightMapping::griddedFilterWithMaxHeight(
 
 template <typename PointT>
 typename pcl::PointCloud<PointT>::Ptr
+HeightMapping::griddedFilterWithMaxHeightAlt(
+    const typename pcl::PointCloud<PointT>::Ptr &cloud, float gridSize) {
+
+  if (cloud->empty()) {
+    return cloud;
+  }
+
+  std::unordered_map<std::pair<int, int>, PointT, pair_hash> gridCells;
+  grid_map::Position measuredPosition;
+  grid_map::Index measuredIndex;
+
+  for (const auto &point : *cloud) {
+    measuredPosition << point.x, point.y;
+
+    if (!map_.getIndex(measuredPosition, measuredIndex)) {
+      continue; // Skip points outside map bounds
+    }
+
+    auto gridIndex = std::make_pair(measuredIndex.x(), measuredIndex.y());
+    auto [iter, inserted] = gridCells.try_emplace(gridIndex, point);
+
+    if (inserted) {
+      // If new point, get exact grid center position
+      iter->second = point;
+      map_.getPosition(measuredIndex, measuredPosition);
+      iter->second.x = measuredPosition.x();
+      iter->second.y = measuredPosition.y();
+    } else if (point.z > iter->second.z) {
+      // If higher point, update z while keeping grid center position
+      iter->second = point;
+      map_.getPosition(measuredIndex, measuredPosition);
+      iter->second.x = measuredPosition.x();
+      iter->second.y = measuredPosition.y();
+    }
+  }
+
+  auto cloudDownsampled = boost::make_shared<pcl::PointCloud<PointT>>();
+  cloudDownsampled->reserve(gridCells.size());
+  for (const auto &gridCell : gridCells) {
+    cloudDownsampled->points.emplace_back(gridCell.second);
+  }
+
+  cloudDownsampled->header = cloud->header;
+  return cloudDownsampled;
+}
+
+template <typename PointT>
+typename pcl::PointCloud<PointT>::Ptr
 HeightMapping::mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud) {
 
   // 1. Sample pointcloud with max height in each grid cell
   auto griddedCloud =
-      griddedFilterWithMaxHeight<PointT>(cloud, params_.gridResolution);
+      griddedFilterWithMaxHeightAlt<PointT>(cloud, params_.gridResolution);
 
   // 2. estimate height
   heightEstimator_->estimate(map_, *griddedCloud);
@@ -151,6 +199,10 @@ template pcl::PointCloud<Laser>::Ptr
 HeightMapping::griddedFilterWithMaxHeight<Laser>(
     const pcl::PointCloud<Laser>::Ptr &cloud, float gridSize);
 
+template pcl::PointCloud<Laser>::Ptr
+HeightMapping::griddedFilterWithMaxHeightAlt<Laser>(
+    const pcl::PointCloud<Laser>::Ptr &cloud, float gridSize);
+
 template typename pcl::PointCloud<Laser>::Ptr
 HeightMapping::mapping<Laser>(const pcl::PointCloud<Laser>::Ptr &cloud);
 
@@ -161,6 +213,10 @@ template void HeightMapping::raycasting<Laser>(
 // Color
 template pcl::PointCloud<Color>::Ptr
 HeightMapping::griddedFilterWithMaxHeight<Color>(
+    const pcl::PointCloud<Color>::Ptr &cloud, float gridSize);
+
+template pcl::PointCloud<Color>::Ptr
+HeightMapping::griddedFilterWithMaxHeightAlt<Color>(
     const pcl::PointCloud<Color>::Ptr &cloud, float gridSize);
 
 template void HeightMapping::fastHeightFilter<Color>(

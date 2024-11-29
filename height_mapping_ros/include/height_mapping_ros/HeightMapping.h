@@ -20,29 +20,29 @@
 
 class FastHeightFilter {
 public:
-  FastHeightFilter(float min_z, float max_z) : min_z_(min_z), max_z_(max_z) {}
+  FastHeightFilter(float minZ, float maxZ) : minZ_(minZ), maxZ_(maxZ) {}
 
   template <typename PointT>
   void filter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-              typename pcl::PointCloud<PointT>::Ptr &filtered_cloud) {
-    filtered_cloud->header = cloud->header;
+              typename pcl::PointCloud<PointT>::Ptr &cloudFiltered) {
+    cloudFiltered->header = cloud->header;
 
-    filtered_cloud->points.clear();
-    filtered_cloud->points.reserve(cloud->points.size());
+    cloudFiltered->points.clear();
+    cloudFiltered->points.reserve(cloud->points.size());
 
     for (const auto &point : cloud->points) {
-      if (point.z >= min_z_ && point.z <= max_z_) {
-        filtered_cloud->points.emplace_back(point);
+      if (point.z >= minZ_ && point.z <= maxZ_) {
+        cloudFiltered->points.emplace_back(point);
       }
     }
 
-    filtered_cloud->width = filtered_cloud->points.size();
-    filtered_cloud->height = 1;
-    filtered_cloud->is_dense = cloud->is_dense;
+    cloudFiltered->width = cloudFiltered->points.size();
+    cloudFiltered->height = 1;
+    cloudFiltered->is_dense = cloud->is_dense;
   }
 
 private:
-  float min_z_, max_z_;
+  float minZ_, maxZ_;
 };
 
 class HeightMapping {
@@ -89,6 +89,9 @@ private:
   typename pcl::PointCloud<PointT>::Ptr
   griddedFilterWithMaxHeight(const typename pcl::PointCloud<PointT>::Ptr &cloud,
                              float gridSize);
+  template <typename PointT>
+  typename pcl::PointCloud<PointT>::Ptr griddedFilterWithMaxHeightAlt(
+      const typename pcl::PointCloud<PointT>::Ptr &cloud, float gridSize);
 
   struct pair_hash {
     template <class T1, class T2>
