@@ -1,5 +1,7 @@
 #include "height_mapping_ros/HeightMapGeneratorNode.h"
 #include <pcl/io/pcd_io.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
 
 HeightMapGeneratorNode::HeightMapGeneratorNode() {
   getParameters();
@@ -26,6 +28,10 @@ HeightMapGeneratorNode::HeightMapGeneratorNode() {
   }
 
   ROS_INFO("Found %zu point cloud files", cloudFiles_.size());
+  // Initialize the merged cloud pointer
+  mergedCloud_.reset(new pcl::PointCloud<Laser>);
+  mergedCloud_->header.frame_id = frameId_;
+
   generateHeightMap();
   publishTimer_.start();
 }
@@ -45,6 +51,9 @@ void HeightMapGeneratorNode::getParameters() {
 void HeightMapGeneratorNode::setupROSInterface() {
   pubHeightMap_ = nh_.advertise<grid_map_msgs::GridMap>(
       "/height_map_generator/height_map", 1);
+
+  pubMergedCloud_ = nh_.advertise<sensor_msgs::PointCloud2>(
+      "/height_map_generator/merged_cloud", 1);
 
   publishTimer_ =
       nhPriv_.createWallTimer(ros::WallDuration(1.0 / publishRate_),
@@ -93,14 +102,14 @@ void HeightMapGeneratorNode::processPointCloud(
 }
 
 pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::griddedFilterWithMaxHeight(
-    const pcl::PointCloud<Laser>::Ptr& cloud, float gridSize) {
+    const pcl::PointCloud<Laser>::Ptr &cloud, float gridSize) {
   if (cloud->empty()) {
     return cloud;
   }
 
   // grid cell: first, second -> (x_index, y_index), point
   std::unordered_map<std::pair<int, int>, Laser, pair_hash> grid_map;
-  for (const auto& point : *cloud) {
+  for (const auto &point : *cloud) {
     int x_index = std::floor(point.x / gridSize);
     int y_index = std::floor(point.y / gridSize);
 
@@ -114,7 +123,7 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::griddedFilterWithMaxHeight(
 
   auto cloud_downsampled = boost::make_shared<pcl::PointCloud<Laser>>();
   cloud_downsampled->reserve(grid_map.size());
-  for (const auto& grid_cell : grid_map) {
+  for (const auto &grid_cell : grid_map) {
     cloud_downsampled->points.emplace_back(grid_cell.second);
   }
 
@@ -123,8 +132,9 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::griddedFilterWithMaxHeight(
 }
 
 pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
-    const pcl::PointCloud<Laser>::Ptr& cloud) {
-  if (cloud->empty()) return cloud;
+    const pcl::PointCloud<Laser>::Ptr &cloud) {
+  if (cloud->empty())
+    return cloud;
 
   // 1. Create a 2D grid for height map and visibility
   float min_x = std::numeric_limits<float>::max();
@@ -132,7 +142,7 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
   float max_x = -std::numeric_limits<float>::max();
   float max_y = -std::numeric_limits<float>::max();
 
-  for (const auto& point : cloud->points) {
+  for (const auto &point : cloud->points) {
     min_x = std::min(min_x, point.x);
     min_y = std::min(min_y, point.y);
     max_x = std::max(max_x, point.x);
@@ -150,19 +160,21 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
       grid_size_x, std::vector<bool>(grid_size_y, false));
 
   // 2. Project points to 2D grid and keep maximum height
-  for (const auto& point : cloud->points) {
+  for (const auto &point : cloud->points) {
     int idx_x = static_cast<int>((point.x - min_x) / cell_size);
     int idx_y = static_cast<int>((point.y - min_y) / cell_size);
-    
-    if (idx_x >= 0 && idx_x < grid_size_x && 
-        idx_y >= 0 && idx_y < grid_size_y) {
+
+    if (idx_x >= 0 && idx_x < grid_size_x && idx_y >= 0 &&
+        idx_y < grid_size_y) {
       height_map[idx_x][idx_y] = std::max(height_map[idx_x][idx_y], point.z);
     }
   }
 
-  // 3. Perform raycasting from sensor origin (assumed to be 0,0,0 if not available)
-  const Eigen::Vector3f sensor_origin(0.0f, 0.0f, 0.0f);  // Modify if sensor origin is known
-  
+  // 3. Perform raycasting from sensor origin (assumed to be 0,0,0 if not
+  // available)
+  const Eigen::Vector3f sensor_origin(0.0f, 0.0f,
+                                      0.0f); // Modify if sensor origin is known
+
   // Mark visible cells using raycasting
   for (int x = 0; x < grid_size_x; ++x) {
     for (int y = 0; y < grid_size_y; ++y) {
@@ -173,8 +185,8 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
 
         // Ray from sensor to point
         Eigen::Vector3f ray_dir(world_x - sensor_origin.x(),
-                              world_y - sensor_origin.y(),
-                              world_z - sensor_origin.z());
+                                world_y - sensor_origin.y(),
+                                world_z - sensor_origin.z());
         float ray_length = ray_dir.norm();
         ray_dir.normalize();
 
@@ -186,9 +198,10 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
           int check_x = static_cast<int>((check_point.x() - min_x) / cell_size);
           int check_y = static_cast<int>((check_point.y() - min_y) / cell_size);
 
-          if (check_x >= 0 && check_x < grid_size_x && 
-              check_y >= 0 && check_y < grid_size_y) {
-            if (height_map[check_x][check_y] > check_point.z() + 0.1f) {  // 10cm threshold
+          if (check_x >= 0 && check_x < grid_size_x && check_y >= 0 &&
+              check_y < grid_size_y) {
+            if (height_map[check_x][check_y] >
+                check_point.z() + 0.1f) { // 10cm threshold
               is_visible = false;
               break;
             }
@@ -201,14 +214,15 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
 
   // 4. Create filtered cloud with only visible points
   auto filtered_cloud = boost::make_shared<pcl::PointCloud<Laser>>();
-  for (const auto& point : cloud->points) {
+  for (const auto &point : cloud->points) {
     int idx_x = static_cast<int>((point.x - min_x) / cell_size);
     int idx_y = static_cast<int>((point.y - min_y) / cell_size);
-    
-    if (idx_x >= 0 && idx_x < grid_size_x && 
-        idx_y >= 0 && idx_y < grid_size_y) {
-      if (visibility_map[idx_x][idx_y] && 
-          std::abs(point.z - height_map[idx_x][idx_y]) < 0.1f) {  // Only keep points near maximum height
+
+    if (idx_x >= 0 && idx_x < grid_size_x && idx_y >= 0 &&
+        idx_y < grid_size_y) {
+      if (visibility_map[idx_x][idx_y] &&
+          std::abs(point.z - height_map[idx_x][idx_y]) <
+              0.1f) { // Only keep points near maximum height
         filtered_cloud->points.push_back(point);
       }
     }
@@ -224,6 +238,40 @@ pcl::PointCloud<Laser>::Ptr HeightMapGeneratorNode::raycastFiltering(
 
 void HeightMapGeneratorNode::generateHeightMap() {
   ROS_INFO("Generating height map from %d scans...", numScansToAggregate_);
+
+  try {
+    // Clear any existing points
+    mergedCloud_->clear();
+
+    // Process specified number of scans
+    const int numScans =
+        std::min(numScansToAggregate_, static_cast<int>(cloudFiles_.size()));
+
+    for (int i = 0; i < numScans; ++i) {
+      try {
+        auto cloud = readPCDFile(cloudFiles_[i]);
+        if (!cloud || cloud->empty()) {
+          ROS_WARN("Empty or invalid cloud from file: %s",
+                   cloudFiles_[i].c_str());
+          continue;
+        }
+
+        // Merge point clouds
+        *mergedCloud_ += *cloud;
+
+        ROS_INFO("Processing scan %d/%d", i + 1, numScans);
+      } catch (const std::exception &e) {
+        ROS_ERROR("Error processing cloud %d: %s", i, e.what());
+        continue;
+      }
+    }
+
+    ROS_INFO("Total points in merged cloud: %zu", mergedCloud_->points.size());
+
+  } catch (const std::exception &e) {
+    ROS_ERROR("Error in generateHeightMap: %s", e.what());
+    return;
+  }
 
   // Find map bounds from first scan
   auto firstCloud = readPCDFile(cloudFiles_[0]);
@@ -254,33 +302,26 @@ void HeightMapGeneratorNode::generateHeightMap() {
   heightMap_.clearAll();
   heightMap_.get("num_points").setConstant(0.0);
 
-  // Process specified number of scans
-  const int numScans = std::min(numScansToAggregate_, 
-                               static_cast<int>(cloudFiles_.size()));
-  for (int i = 0; i < numScans; ++i) {
-    auto cloud = readPCDFile(cloudFiles_[i]);
-
-    // 1. Remove points outside height range
-    pcl::PointCloud<Laser>::Ptr heightFilteredCloud(new pcl::PointCloud<Laser>);
-    for (const auto& point : cloud->points) {
-      if (point.z >= minHeight_ && point.z <= maxHeight_) {
-        heightFilteredCloud->points.push_back(point);
-      }
+  // 1. Remove points outside height range
+  pcl::PointCloud<Laser>::Ptr heightFilteredCloud(new pcl::PointCloud<Laser>);
+  for (const auto &point : mergedCloud_->points) {
+    if (point.z >= minHeight_ && point.z <= maxHeight_) {
+      heightFilteredCloud->points.push_back(point);
     }
-    heightFilteredCloud->width = heightFilteredCloud->points.size();
-    heightFilteredCloud->height = 1;
-    heightFilteredCloud->is_dense = true;
-
-    // 2. Apply raycasting-based filtering
-    auto raycastedCloud = raycastFiltering(heightFilteredCloud);
-
-    // 3. Sample pointcloud with max height in each grid cell
-    auto griddedCloud = griddedFilterWithMaxHeight(raycastedCloud, mapResolution_);
-
-    // 4. Process filtered cloud
-    processPointCloud(griddedCloud);
-    ROS_INFO_THROTTLE(1.0, "Processing scan %d/%d", i + 1, numScans);
   }
+  heightFilteredCloud->width = heightFilteredCloud->points.size();
+  heightFilteredCloud->height = 1;
+  heightFilteredCloud->is_dense = true;
+
+  // 2. Apply raycasting-based filtering
+  // auto raycastedCloud = raycastFiltering(heightFilteredCloud);
+
+  // 3. Sample pointcloud with max height in each grid cell
+  auto griddedCloud =
+      griddedFilterWithMaxHeight(heightFilteredCloud, mapResolution_);
+
+  // 4. Process filtered cloud
+  processPointCloud(griddedCloud);
 
   // Compute final variance
   for (grid_map::GridMapIterator it(heightMap_); !it.isPastEnd(); ++it) {
@@ -295,7 +336,24 @@ void HeightMapGeneratorNode::generateHeightMap() {
 
 void HeightMapGeneratorNode::publishHeightMap(
     const ros::WallTimerEvent &event) {
-  grid_map_msgs::GridMap msg;
-  grid_map::GridMapRosConverter::toMessage(heightMap_, msg);
-  pubHeightMap_.publish(msg);
+  try {
+    if (!mergedCloud_ || mergedCloud_->empty()) {
+      ROS_WARN_THROTTLE(1.0, "No point cloud data to publish");
+      return;
+    }
+
+    // Publish height map
+    grid_map_msgs::GridMap msg;
+    grid_map::GridMapRosConverter::toMessage(heightMap_, msg);
+    pubHeightMap_.publish(msg);
+
+    // Publish merged cloud
+    sensor_msgs::PointCloud2 cloudMsg;
+    pcl::toROSMsg(*mergedCloud_, cloudMsg);
+    cloudMsg.header.frame_id = frameId_;
+    cloudMsg.header.stamp = ros::Time::now();
+    pubMergedCloud_.publish(cloudMsg);
+  } catch (const std::exception &e) {
+    ROS_ERROR("Error in publishHeightMap: %s", e.what());
+  }
 }

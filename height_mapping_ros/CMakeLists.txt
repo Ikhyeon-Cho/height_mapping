@@ -73,6 +73,7 @@ target_link_libraries(global_mapping_node
 add_executable(data_collection_node 
   src/executables/data_collection_main.cpp
   src/nodes/DataCollectionNode.cpp
+  src/HeightMapping.cpp
 )
 target_link_libraries(data_collection_node
   ${PCL_LIBRARIES}

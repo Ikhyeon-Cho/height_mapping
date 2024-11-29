@@ -5,10 +5,10 @@
     <param name="map_resolution" value="0.1" />
     <param name="min_height" value="-1.0" />
     <param name="max_height" value="2.0" />
-    <param name="num_scans_to_aggregate" value="300" />
+    <param name="num_scans_to_aggregate" value="100" />
     <param name="frame_id" value="map" />
   </node>
 
   <!-- Launch RViz with configuration -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find height_mapping)/rviz/height_map_generator.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find height_mapping)/launch/rviz/height_map_generator.rviz" />
 </launch> 

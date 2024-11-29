@@ -168,6 +168,10 @@ HeightMapping::mapping(const typename pcl::PointCloud<PointT>::Ptr &cloud) {
   auto griddedCloud =
       griddedFilterWithMaxHeightAlt<PointT>(cloud, params_.gridResolution);
 
+  if (griddedCloud->empty()) {
+    return griddedCloud;
+  }
+
   // 2. estimate height
   heightEstimator_->estimate(map_, *griddedCloud);
 
@@ -182,10 +186,11 @@ template <typename PointT>
 void HeightMapping::raycasting(
     const Eigen::Vector3f &sensorOrigin,
     const typename pcl::PointCloud<PointT>::Ptr &cloud) {
+  if (cloud->empty()) {
+    return;
+  }
   raycaster_.correctHeight(map_, *cloud, sensorOrigin);
 }
-
-const grid_map::HeightMap &HeightMapping::getHeightMap() const { return map_; }
 
 //////////////////////////////////////////////////
 // Explicit instantiation of template functions //

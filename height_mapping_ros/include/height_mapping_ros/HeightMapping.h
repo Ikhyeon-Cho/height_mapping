@@ -78,7 +78,11 @@ public:
 
   void updateMapOrigin(const grid_map::Position &position);
 
-  const grid_map::HeightMap &getHeightMap() const;
+  const grid_map::HeightMap &getHeightMap() const { return map_; }
+  void setMapPosition(const grid_map::Position &position) {
+    map_.setPosition(position);
+  }
+  void clearMap() { map_.clearAll(); }
 
 private:
   void paramValidityCheck();
