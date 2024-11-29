@@ -12,6 +12,7 @@
 namespace height_mapping {
 void MovingAverageEstimator::estimate(
     grid_map::HeightMap &map, const pcl::PointCloud<pcl::PointXYZ> &cloud) {
+
   if (hasEmptyCloud(cloud))
     return;
 
@@ -21,25 +22,35 @@ void MovingAverageEstimator::estimate(
     return;
   }
 
-  auto &height_matrix = map.getHeightMatrix();
+  // Prepare matrices
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
+
+  for (const auto &newPoint : cloud) {
     // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
 
     // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
+    if (map.isEmptyAt(measuredIndex)) {
+      height = newPoint.z;
+      minHeight = newPoint.z;
+      maxHeight = newPoint.z;
       continue;
     }
 
-    updateMean(height, point.z, alpha_);
+    movingAveageUpdate(height, newPoint.z, params_.alpha);
+    minHeight = std::min(minHeight, newPoint.z);
+    maxHeight = std::max(maxHeight, newPoint.z);
   }
 }
 
@@ -54,35 +65,43 @@ void MovingAverageEstimator::estimate(
     return;
   }
 
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+
   map.addLayer("intensity");
+  auto &intensityMatrix = map["intensity"];
 
-  auto &height_matrix = map.getHeightMatrix();
-  auto &intensity_matrix = map["intensity"];
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
+  for (const auto &newPoint : cloud) {
     // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &intensity = intensity_matrix(cell_index(0), cell_index(1));
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &intensity = intensityMatrix(measuredIndex(0), measuredIndex(1));
+    auto &min_height = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &max_height = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
 
     // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      intensity = point.intensity;
+    if (map.isEmptyAt(measuredIndex)) {
+      height = min_height = max_height = newPoint.z;
+      intensity = newPoint.intensity;
       continue;
     }
-    updateMean(height, point.z, alpha_);
-    updateMean(intensity, point.intensity, alpha_);
+    movingAveageUpdate(height, newPoint.z, params_.alpha);
+    movingAveageUpdate(intensity, newPoint.intensity, params_.alpha);
+    min_height = std::min(min_height, newPoint.z);
+    max_height = std::max(max_height, newPoint.z);
   }
 }
 
 void MovingAverageEstimator::estimate(
     grid_map::HeightMap &map, const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
+
   if (hasEmptyCloud(cloud))
     return;
 
@@ -92,46 +111,56 @@ void MovingAverageEstimator::estimate(
     return;
   }
 
+  auto &heightMatrix = map.getHeightMatrix();
+  auto &minHeightMatrix = map.getMinHeightMatrix();
+  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+
   map.addLayer("r");
   map.addLayer("g");
   map.addLayer("b");
   map.addLayer("color");
-
-  auto &height_matrix = map.getHeightMatrix();
   auto &red_matrix = map["r"];
   auto &green_matrix = map["g"];
   auto &blue_matrix = map["b"];
   auto &color_matrix = map["color"];
 
-  grid_map::Index cell_index;
-  grid_map::Position cell_position;
-  for (const auto &point : cloud) {
+  grid_map::Index measuredIndex;
+  grid_map::Position measuredPosition;
+
+  for (const auto &newPoint : cloud) {
     // Skip if the point is out of the map
-    cell_position << point.x, point.y;
-    if (!map.getIndex(cell_position, cell_index))
+    measuredPosition << newPoint.x, newPoint.y;
+    if (!map.getIndex(measuredPosition, measuredIndex))
       continue;
 
-    auto &height = height_matrix(cell_index(0), cell_index(1));
-    auto &red = red_matrix(cell_index(0), cell_index(1));
-    auto &green = green_matrix(cell_index(0), cell_index(1));
-    auto &blue = blue_matrix(cell_index(0), cell_index(1));
-    auto &color = color_matrix(cell_index(0), cell_index(1));
+    auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &min_height = minHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &max_height = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &red = red_matrix(measuredIndex(0), measuredIndex(1));
+    auto &green = green_matrix(measuredIndex(0), measuredIndex(1));
+    auto &blue = blue_matrix(measuredIndex(0), measuredIndex(1));
+    auto &color = color_matrix(measuredIndex(0), measuredIndex(1));
 
     // Initialize the height and variance if it is NaN
-    if (map.isEmptyAt(cell_index)) {
-      height = point.z;
-      red = point.r;
-      green = point.g;
-      blue = point.b;
-      grid_map::colorVectorToValue(point.getRGBVector3i(), color);
+    if (map.isEmptyAt(measuredIndex)) {
+      height = min_height = max_height = newPoint.z;
+      red = newPoint.r;
+      green = newPoint.g;
+      blue = newPoint.b;
+      grid_map::colorVectorToValue(newPoint.getRGBVector3i(), color);
 
       continue;
     }
 
-    updateMean(height, point.z, alpha_);
-    updateMean(red, point.r, alpha_);
-    updateMean(green, point.g, alpha_);
-    updateMean(blue, point.b, alpha_);
+    // Height estimates
+    movingAveageUpdate(height, newPoint.z, params_.alpha);
+    min_height = std::min(min_height, newPoint.z);
+    max_height = std::max(max_height, newPoint.z);
+
+    // Color estimates
+    movingAveageUpdate(red, newPoint.r, params_.alpha);
+    movingAveageUpdate(green, newPoint.g, params_.alpha);
+    movingAveageUpdate(blue, newPoint.b, params_.alpha);
     grid_map::colorVectorToValue(Eigen::Vector3i(red, green, blue), color);
   }
 }

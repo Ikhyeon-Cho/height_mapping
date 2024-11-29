@@ -30,21 +30,21 @@ void GlobalMapping::initGlobalMap() {
 void GlobalMapping::initHeightEstimator() {
 
   if (params_.heightEstimatorType == "KalmanFilter") {
-    height_estimator_ = std::make_unique<height_mapping::KalmanEstimator>();
+    heightEstimator_ = std::make_unique<height_mapping::KalmanEstimator>();
   } else if (params_.heightEstimatorType == "MovingAverage") {
-    height_estimator_ =
+    heightEstimator_ =
         std::make_unique<height_mapping::MovingAverageEstimator>();
   } else if (params_.heightEstimatorType == "StatMean") {
-    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
+    heightEstimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
   } else {
-    height_estimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
+    heightEstimator_ = std::make_unique<height_mapping::StatMeanEstimator>();
   }
 }
 template <typename PointT>
 void GlobalMapping::mapping(const pcl::PointCloud<PointT> &cloud) {
 
   updateMeasuredGridIndices<PointT>(globalmap_, cloud);
-  height_estimator_->estimate(globalmap_, cloud);
+  heightEstimator_->estimate(globalmap_, cloud);
 }
 
 // Save measured indices for efficiency
@@ -68,10 +68,9 @@ void GlobalMapping::updateMeasuredGridIndices(
   }
 }
 
-void GlobalMapping::addBasicLayer(const std::string &layer) {
-  auto basic_layers = globalmap_.getBasicLayers();
-  basic_layers.insert(basic_layers.end(), {layer});
-  globalmap_.setBasicLayers(basic_layers);
+void GlobalMapping::raycasting(const Eigen::Vector3f &sensorOrigin,
+                               const pcl::PointCloud<Laser> &cloud) {
+  raycaster_.correctHeight(globalmap_, cloud, sensorOrigin);
 }
 
 void GlobalMapping::clearMap() { globalmap_.clearAll(); }

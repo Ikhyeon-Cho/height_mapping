@@ -21,6 +21,7 @@
 #include "height_mapping_ros/CloudTypes.h"
 #include "height_mapping_ros/GlobalMapping.h"
 #include "utils/pointcloud.h"
+#include "utils/TransformHandler.h"
 
 class GlobalMappingNode {
 public:
@@ -83,6 +84,7 @@ private:
 
   // Core mapping object
   std::unique_ptr<GlobalMapping> globalMapping_;
+  utils::TransformHandler tf_;
   HeightMapWriter mapWriter_;
 
   // State variables

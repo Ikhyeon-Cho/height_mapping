@@ -7,11 +7,11 @@ map:
   lidarCloudTopic: "/velodyne/points"
   rgbCloudTopic: "/height_mapping/sensor_processor/points"
   gridResolution: 0.1 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
-  mapLengthX: 10.0
-  mapLengthY: 10.0
+  mapLengthX: 15.0
+  mapLengthY: 15.0
   heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
   minHeightThreshold: -0.2 # indoor: -0.05, outdoor: -0.2 [meter]
-  maxHeightThreshold: 1.0
+  maxHeightThreshold: 1.7
 
 globalmap:
   gridResolution: 0.1
@@ -30,3 +30,9 @@ sensor_processor:
   downsamplingResolution: 0.02 # [m/voxel]
   minRangeThreshold: 0.3
   maxRangeThreshold: 15.0
+
+data_collection:
+  lidarCloudTopic: "/velodyne/points"
+  poseUpdateRate: 10.0
+  globalMapPath: "$(find height_mapping)/maps/globalmap.bag"
+  dataCollectionPath: "$(find height_mapping)/maps/"
