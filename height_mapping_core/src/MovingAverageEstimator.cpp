@@ -27,6 +27,9 @@ void MovingAverageEstimator::estimate(
   auto &minHeightMatrix = map.getMinHeightMatrix();
   auto &maxHeightMatrix = map.getMaxHeightMatrix();
 
+  map.addLayer("n_measured", 0.0);
+  auto &numMeasuredMatrix = map["n_measured"];
+
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
 
@@ -39,15 +42,18 @@ void MovingAverageEstimator::estimate(
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
     auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
     auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
 
     // Initialize the height and variance if it is NaN
     if (map.isEmptyAt(measuredIndex)) {
       height = newPoint.z;
       minHeight = newPoint.z;
       maxHeight = newPoint.z;
+      nPoints = 1;
       continue;
     }
 
+    ++nPoints;
     movingAveageUpdate(height, newPoint.z, params_.alpha);
     minHeight = std::min(minHeight, newPoint.z);
     maxHeight = std::max(maxHeight, newPoint.z);

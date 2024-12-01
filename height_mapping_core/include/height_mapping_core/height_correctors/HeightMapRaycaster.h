@@ -26,10 +26,12 @@ public:
 
     auto &heightMatrix = map.getHeightMatrix();
     auto &varianceMatrix = map.getVarianceMatrix();
+    auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
     map.addLayer("raycasting");
     map.clear("raycasting");
     auto &raycastingMatrix = map.get("raycasting");
+
     map.addLayer("scan_height");
     map.clear("scan_height");
     auto &scanHeightMatrix = map.get("scan_height");
@@ -61,7 +63,7 @@ public:
       rayDir.normalize();
 
       // Visibility check through ray
-      float samplingStep = map.getResolution() * 1.0f; // 0.5
+      float samplingStep = map.getResolution();
       for (float t = 0; t < rayLength - samplingStep; t += samplingStep) {
 
         // Get ray point: starting from sensor
@@ -80,12 +82,13 @@ public:
           break;
 
         if (isStaticAt(map, checkIndex))
-        continue;
+          continue;
 
         // Get map height and variance at the ray point
         auto &mapHeight = heightMatrix(checkIndex(0), checkIndex(1));
         auto &mapHeightVariance = varianceMatrix(checkIndex(0), checkIndex(1));
         auto &rayHeight = raycastingMatrix(checkIndex(0), checkIndex(1));
+        auto &nPoints = numMeasuredMatrix(checkIndex(0), checkIndex(1));
 
         // For visualization of traced ray
         if (!std::isfinite(rayHeight))
@@ -95,7 +98,10 @@ public:
 
         // Update height if current height is higher than the ray point
         if (mapHeight > pointOnRay.z() + correctionThreshold_) {
-          mapHeight = pointOnRay.z();
+          mapHeightVariance +=
+              (mapHeight - pointOnRay.z()); // Increase variance
+          nPoints = 1;                      // Reset nPoints
+          mapHeight = pointOnRay.z();       // Height correction
         }
       }
     }

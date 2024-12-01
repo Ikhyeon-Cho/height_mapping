@@ -116,22 +116,23 @@ void GlobalMappingNode::rgbCloudCallback(
 
 void GlobalMappingNode::publishMap(const ros::TimerEvent &) {
 
+  std::vector<std::string> layers = {grid_map::HeightMap::CoreLayers::ELEVATION,
+                                     "intensity"};
   // Visualize global map
-  sensor_msgs::PointCloud2 cloud_msg;
-  std::vector<std::string> layers = globalMapping_->getHeightMap().getLayers();
+  sensor_msgs::PointCloud2 msgCloud;
   toPointCloud2(globalMapping_->getHeightMap(), layers,
-                globalMapping_->getMeasuredGridIndices(), cloud_msg);
-  pubGlobalMap_.publish(cloud_msg);
+                globalMapping_->getMeasuredGridIndices(), msgCloud);
+  pubGlobalMap_.publish(msgCloud);
 
   // Visualize map region
-  visualization_msgs::Marker msg_map_region;
-  HeightMapMsgs::toMapRegion(globalMapping_->getHeightMap(), msg_map_region);
-  pubMapRegion_.publish(msg_map_region);
+  visualization_msgs::Marker msgRegion;
+  HeightMapMsgs::toMapRegion(globalMapping_->getHeightMap(), msgRegion);
+  pubMapRegion_.publish(msgRegion);
 }
 
 void GlobalMappingNode::toPointCloud2(
     const grid_map::HeightMap &map, const std::vector<std::string> &layers,
-    const std::unordered_set<grid_map::Index> &measured_indices,
+    const std::unordered_set<grid_map::Index> &measuredIndices,
     sensor_msgs::PointCloud2 &cloud) {
 
   // Setup cloud header
@@ -143,10 +144,10 @@ void GlobalMappingNode::toPointCloud2(
   std::vector<std::string> fieldNames;
   fieldNames.reserve(layers.size());
 
+  // Setup field names
+  fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
   for (const auto &layer : layers) {
-    if (layer == grid_map::HeightMap::CoreLayers::ELEVATION) {
-      fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
-    } else if (layer == "color") {
+    if (layer == "color") {
       fieldNames.push_back("rgb");
     } else {
       fieldNames.push_back(layer);
@@ -169,7 +170,7 @@ void GlobalMappingNode::toPointCloud2(
   }
 
   // Initialize cloud size
-  const size_t num_points = measured_indices.size();
+  const size_t num_points = measuredIndices.size();
   cloud.height = 1;
   cloud.width = num_points;
   cloud.point_step = offset;
@@ -185,8 +186,8 @@ void GlobalMappingNode::toPointCloud2(
   }
 
   // Fill point cloud data
-  size_t valid_points = 0;
-  for (const auto &index : measured_indices) {
+  size_t validPoints = 0;
+  for (const auto &index : measuredIndices) {
     grid_map::Position3 position;
     if (!map.getPosition3(grid_map::HeightMap::CoreLayers::ELEVATION, index,
                           position)) {
@@ -194,24 +195,24 @@ void GlobalMappingNode::toPointCloud2(
     }
 
     // Update each field
-    for (auto &[field_name, iterator] : iterators) {
-      if (field_name == "x")
+    for (auto &[fieldName, iterator] : iterators) {
+      if (fieldName == "x")
         *iterator = static_cast<float>(position.x());
-      else if (field_name == "y")
+      else if (fieldName == "y")
         *iterator = static_cast<float>(position.y());
-      else if (field_name == "z")
+      else if (fieldName == "z")
         *iterator = static_cast<float>(position.z());
-      else if (field_name == "rgb")
+      else if (fieldName == "rgb")
         *iterator = static_cast<float>(map.at("color", index));
       else
-        *iterator = static_cast<float>(map.at(field_name, index));
+        *iterator = static_cast<float>(map.at(fieldName, index));
       ++iterator;
     }
-    ++valid_points;
+    ++validPoints;
   }
 
   // Adjust final cloud size
-  cloud.width = valid_points;
+  cloud.width = validPoints;
   cloud.row_step = cloud.width * cloud.point_step;
   cloud.data.resize(cloud.height * cloud.row_step);
 }

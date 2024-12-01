@@ -28,6 +28,8 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   auto &minHeightMatrix = map.getMinHeightMatrix();
   auto &maxHeightMatrix = map.getMaxHeightMatrix();
 
+  map.addLayer("n_measured", 0.0);
+  auto &numMeasuredMatrix = map["n_measured"];
   map.addLayer("confidence", 0.0f);
   auto &confidenceMatrix = map["confidence"];
 
@@ -43,6 +45,7 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
     auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
     auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
     auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
 
     const Eigen::Vector3f pointVec(newPoint.x, newPoint.y, newPoint.z);
@@ -50,12 +53,15 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
 
     if (map.isEmptyAt(measuredIndex)) {
       height = newPoint.z;
+      minHeight = newPoint.z;
+      maxHeight = newPoint.z;
       variance = pointVariance;
-      minHeight = maxHeight = newPoint.z;
+      nPoints = 1;
       confidence = getConfidence(variance);
       continue;
     }
 
+    ++nPoints;
     kalmanUpdate(height, variance, newPoint.z, pointVariance);
     minHeight = std::min(minHeight, newPoint.z);
     maxHeight = std::max(maxHeight, newPoint.z);

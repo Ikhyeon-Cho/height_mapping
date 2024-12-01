@@ -16,7 +16,7 @@ HeightMap::HeightMap() {
   add(CoreLayers::ELEVATION_MIN);
   add(CoreLayers::ELEVATION_MAX);
   add(CoreLayers::VARIANCE);
-
+  add(CoreLayers::N_MEASUREMENTS);
   setFrameId("map");
   setBasicLayers({CoreLayers::ELEVATION, CoreLayers::ELEVATION_MIN,
                   CoreLayers::ELEVATION_MAX});
