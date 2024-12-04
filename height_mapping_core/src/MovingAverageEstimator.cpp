@@ -26,9 +26,7 @@ void MovingAverageEstimator::estimate(
   auto &heightMatrix = map.getHeightMatrix();
   auto &minHeightMatrix = map.getMinHeightMatrix();
   auto &maxHeightMatrix = map.getMaxHeightMatrix();
-
-  map.addLayer("n_measured", 0.0);
-  auto &numMeasuredMatrix = map["n_measured"];
+  auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;

@@ -24,12 +24,11 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
   auto &minHeightMatrix = map.getMinHeightMatrix();
   auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
-  map.addLayer("n_measured", 0.0);
-  auto &numMeasuredMatrix = map["n_measured"];
   map.addLayer("confidence", 0.0f);
   auto &confidenceMatrix = map["confidence"];
 

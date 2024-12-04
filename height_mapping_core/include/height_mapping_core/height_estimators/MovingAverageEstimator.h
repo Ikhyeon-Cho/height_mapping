@@ -16,10 +16,8 @@ namespace height_mapping {
 class MovingAverageEstimator : public HeightEstimatorBase {
 public:
   struct Parameters {
-    float alpha{0.8f};      // Moving average weight [0, 1]:
-                            // closer to 1 means more weight to new measurement
-    float min_weight{0.1f}; // Minimum weight for stability
-    float max_weight{0.9f}; // Maximum weight to ensure adaptability
+    float alpha{0.8f}; // Moving average weight [0, 1]:
+                       // closer to 1 means more weight to new measurement
     bool adaptive_weight{
         false}; // Enable adaptive weight based on height difference
   };
@@ -36,7 +34,14 @@ public:
   void estimate(grid_map::HeightMap &map,
                 const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
+  static void movingAveageUpdate(float &current, float new_value, float alpha) {
+    alpha = clamp(alpha, 0.1f, 0.9f);
+    current = ((1.0f - alpha) * current) + (alpha * new_value);
+  }
+
 private:
+  // Minimum weight for stability
+  // Maximum weight to ensure adaptability
   static float clamp(float value, float min, float max) {
     return std::min(std::max(value, min), max);
   }
@@ -47,10 +52,6 @@ private:
    * @param alpha Weight factor [0,1], higher means more weight to new
    * measurement
    */
-  void movingAveageUpdate(float &current, float new_value, float alpha) const {
-    alpha = clamp(alpha, params_.min_weight, params_.max_weight);
-    current = ((1.0f - alpha) * current) + (alpha * new_value);
-  }
 
   /**
    * Calculate adaptive weight based on measurement difference

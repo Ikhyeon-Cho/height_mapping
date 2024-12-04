@@ -7,7 +7,7 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#include "height_mapping_core/map/HeightMap.h"
+#include "height_mapping_core/height_map/HeightMap.h"
 
 namespace grid_map {
 HeightMap::HeightMap() {
@@ -16,7 +16,7 @@ HeightMap::HeightMap() {
   add(CoreLayers::ELEVATION_MIN);
   add(CoreLayers::ELEVATION_MAX);
   add(CoreLayers::VARIANCE);
-  add(CoreLayers::N_MEASUREMENTS);
+  add(CoreLayers::N_MEASUREMENTS, 0.0f);
   setFrameId("map");
   setBasicLayers({CoreLayers::ELEVATION, CoreLayers::ELEVATION_MIN,
                   CoreLayers::ELEVATION_MAX});

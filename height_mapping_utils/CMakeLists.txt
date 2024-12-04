@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(height_mapping_io)
+project(height_mapping_utils)
 add_compile_options(-std=c++17)
 
 find_package(PCL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  height_mapping_core
-  grid_map_ros
-  grid_map_msgs
+  tf2_ros
+  tf2_eigen
   pcl_ros
   pcl_conversions
-  rosbag
 )
 
 catkin_package(
@@ -20,20 +18,13 @@ catkin_package(
     ${PROJECT_NAME}
   CATKIN_DEPENDS
     roscpp
-    height_mapping_core
-    grid_map_ros
-    grid_map_msgs
+    tf2_ros
+    tf2_eigen
     pcl_ros
     pcl_conversions
-    rosbag
   DEPENDS
     PCL
 )
-
-###########
-## Build ##
-###########
-set(CMAKE_BUILD_TYPE Release)
 
 include_directories(
   include
@@ -41,18 +32,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-link_directories(${PCL_LIBRARY_DIRS})
-
-add_library(${PROJECT_NAME}
-  src/HeightMapReader.cpp
-  src/HeightMapWriter.cpp
-  src/KITTIScanReader.cpp
-  src/KITTIScanWriter.cpp
-  src/KITTIMapWriter.cpp
-)
-
+# Add an empty library target: to build header-only library
+add_library(${PROJECT_NAME} src/empty.cpp)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )
-

@@ -36,9 +36,7 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
   auto &minHeightMatrix = map.getMinHeightMatrix();
   auto &maxHeightMatrix = map.getMaxHeightMatrix();
   auto &varianceMatrix = map.getVarianceMatrix();
-
-  map.addLayer("n_measured", 0.0);
-  auto &numMeasuredMatrix = map["n_measured"];
+  auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
   map.addLayer("standard_error");
   auto &standardErrorMatrix = map["standard_error"];

@@ -9,7 +9,7 @@
 #ifndef HEIGHT_MAP_MSGS_H
 #define HEIGHT_MAP_MSGS_H
 
-#include <height_mapping_core/map/HeightMap.h>
+#include <height_mapping_core/height_mapping_core.h>
 
 #include "height_mapping_msgs/SaveLayerToImage.h"
 #include <grid_map_ros/GridMapRosConverter.hpp>

@@ -16,7 +16,7 @@ namespace height_mapping {
 class KalmanEstimator : public HeightEstimatorBase {
 public:
   struct Parameters {
-    float baseUncertainty{0.01f}; // Base measurement uncertainty
+    float baseUncertainty{0.03f}; // Base measurement uncertainty
     float distanceFactor{
         0.001f};                 // How much uncertainty increases with distance
     float angleFactor{0.001f};   // How much uncertainty increases with angle
@@ -37,10 +37,6 @@ public:
   void estimate(grid_map::HeightMap &map,
                 const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
-private:
-  static float clamp(float value, float min, float max) {
-    return std::min(std::max(value, min), max);
-  }
   /**
    * Kalman filter update step
    * @param height Current height estimate
@@ -50,11 +46,13 @@ private:
    */
   static void kalmanUpdate(float &height, float &variance, float pointHeight,
                            float pointVariance) {
+
     const float kalmanGain = variance / (variance + pointVariance);
     height = height + kalmanGain * (pointHeight - height);
     variance = (1.0f - kalmanGain) * variance;
   }
 
+private:
   /**
    * Calculate measurement variance based on point properties
    * Considers distance and angle from sensor
@@ -84,6 +82,10 @@ private:
    */
   float getConfidence(float variance) const {
     return 1.0f - clamp(variance / params_.maxVariance, 0.0f, 1.0f);
+  }
+
+  static float clamp(float value, float min, float max) {
+    return std::min(std::max(value, min), max);
   }
 
   Parameters params_;
