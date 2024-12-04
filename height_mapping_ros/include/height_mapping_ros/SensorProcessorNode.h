@@ -26,6 +26,7 @@ public:
   ~SensorProcessorNode() = default;
 
 private:
+  void getNodeParameters();
   void getFrameIDs();
   void setupROSInterface();
   void getProcessingParameters();

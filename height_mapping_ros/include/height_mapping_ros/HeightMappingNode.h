@@ -25,7 +25,7 @@ public:
 private:
   void getNodeParameters();
   void getFrameIDs();
-  void setTimers();
+  void setNodeTimers();
   HeightMapping::Parameters getHeightMappingParameters();
   void setupROSInterface();
 
@@ -37,7 +37,7 @@ private:
   // ROS members
   ros::NodeHandle nh_;                         // "/height_mapping/"
   ros::NodeHandle nhPriv_{"~"};                // "/height_mapping/{node_name}"
-  ros::NodeHandle nhMap_{nh_, "map"};          // "/height_mapping/map/"
+  ros::NodeHandle nhMap_{nh_, "height_map"};          // "/height_mapping/height_map/"
   ros::NodeHandle nhFrameID_{nh_, "frame_id"}; // "/height_mapping/frame_id/"
 
   // Frame IDs

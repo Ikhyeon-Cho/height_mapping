@@ -13,7 +13,7 @@ HeightMappingNode::HeightMappingNode() {
 
   getNodeParameters();
   getFrameIDs();
-  setTimers();
+  setNodeTimers();
   setupROSInterface();
 
   heightMapping_ =
@@ -25,11 +25,18 @@ HeightMappingNode::HeightMappingNode() {
 }
 
 void HeightMappingNode::getNodeParameters() {
+  // Topics
+  subLaserTopic_ =
+      nhPriv_.param<std::string>("lidarCloudTopic", "/velodyne_points");
+  subRGBTopic_ =
+      nhPriv_.param<std::string>("rgbCloudTopic", "/camera/pointcloud/points");
 
+  // Options
   robotPoseUpdateRate_ =
       nhPriv_.param<double>("robotPoseUpdateRate", 20.0);          // [Hz]
   mapPublishRate_ = nhPriv_.param<double>("mapPublishRate", 10.0); // [Hz]
   useLidarCallback_ = nhPriv_.param<bool>("useLidarCallback", true);
+  removeRemoterPoints_ = nhPriv_.param<bool>("removeRemoterPoints", true);
   debugMode_ = nhPriv_.param<bool>("debugMode", false);
 }
 
@@ -39,22 +46,17 @@ void HeightMappingNode::getFrameIDs() {
   mapFrame_ = nhFrameID_.param<std::string>("map", "map");
 }
 
-void HeightMappingNode::setTimers() {
+void HeightMappingNode::setNodeTimers() {
 
-  robotPoseUpdateTimer_ = nhPriv_.createTimer(
-      ros::Duration(1.0 / robotPoseUpdateRate_),
-      &HeightMappingNode::updateMapOrigin, this, false, false);
+  robotPoseUpdateTimer_ =
+      nh_.createTimer(ros::Duration(1.0 / robotPoseUpdateRate_),
+                      &HeightMappingNode::updateMapOrigin, this, false, false);
   mapPublishTimer_ =
-      nhPriv_.createTimer(ros::Duration(1.0 / mapPublishRate_),
-                          &HeightMappingNode::publishMap, this, false, false);
+      nh_.createTimer(ros::Duration(1.0 / mapPublishRate_),
+                      &HeightMappingNode::publishMap, this, false, false);
 }
 
 void HeightMappingNode::setupROSInterface() {
-  // Topics
-  subLaserTopic_ =
-      nhMap_.param<std::string>("lidarCloudTopic", "/points_laser");
-  subRGBTopic_ = nhMap_.param<std::string>("rgbCloudTopic", "/points_rgb");
-
   // Subscribers
   if (useLidarCallback_) {
     subLaserCloud_ = nh_.subscribe(
@@ -62,7 +64,6 @@ void HeightMappingNode::setupROSInterface() {
   }
   subRGBCloud_ = nh_.subscribe(subRGBTopic_, 1,
                                &HeightMappingNode::rgbCloudCallback, this);
-
   // Publishers
   pubHeightMap_ =
       nh_.advertise<grid_map_msgs::GridMap>("/height_mapping/map/gridmap", 1);
@@ -93,9 +94,6 @@ HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
       nhMap_.param<std::string>("heightEstimatorType", "StatMean");
   params.minHeight = nhMap_.param<double>("minHeightThreshold", -0.2); // [m]
   params.maxHeight = nhMap_.param<double>("maxHeightThreshold", 1.5);  // [m]
-
-  // Options
-  removeRemoterPoints_ = nhMap_.param<bool>("removeRemoterPoints", true);
 
   return params;
 }

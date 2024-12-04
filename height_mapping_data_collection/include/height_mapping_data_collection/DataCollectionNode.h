@@ -21,6 +21,7 @@ public:
 private:
   void getNodeParameters();
   void getFrameIDs();
+  void setNodeTimers();
   void setupROSInterface();
   void getDataCollectionParameters();
 
@@ -39,7 +40,6 @@ private:
   ros::NodeHandle nhPriv_{"~"};
   ros::NodeHandle nhFrameID_{nh_, "frame_id"};
   ros::NodeHandle nhDataCollection_{nh_, "data_collection"};
-  ros::NodeHandle nhMap_{nh_, "map"};
   // Frame IDs
   std::string mapFrame_;
   std::string baselinkFrame_;
@@ -70,10 +70,10 @@ private:
 
   // Parameters
   std::string subLidarTopic_;
-  std::string dataCollectionPath_{"/home/ikhyeon/ros/dev_ws/src/height_mapping/"
-                                  "height_mapping_ros/maps/"};
-  std::string globalMapPath_{"/home/ikhyeon/ros/dev_ws/src/height_mapping/"
-                             "height_mapping_ros/maps/globalmap.bag"};
+  std::string dataCollectionPath_{
+      "/home/ikhyeon/ros/dev_ws/src/height_mapping/data/"};
+  std::string globalMapPath_{
+      "/home/ikhyeon/ros/dev_ws/src/height_mapping/maps/globalmap.bag"};
 
   grid_map::Length mapLength_;
   double minHeightThreshold_;

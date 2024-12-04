@@ -15,7 +15,7 @@ GlobalMappingNode::GlobalMappingNode() {
 
   getFrameIDs();
 
-  setTimers();
+  setNodeTimers();
 
   setupROSInterface();
 
@@ -33,7 +33,7 @@ void GlobalMappingNode::getFrameIDs() {
   lidarFrame_ = nhFrameID_.param<std::string>("lidar", "velodyne");
 }
 
-void GlobalMappingNode::setTimers() {
+void GlobalMappingNode::setNodeTimers() {
   mapPublishTimer_ =
       nhPriv_.createTimer(ros::Duration(1.0 / mapPublishRate_),
                           &GlobalMappingNode::publishMap, this, false, false);
@@ -71,8 +71,8 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
   params.mapLengthX = nhGlobalMap_.param<double>("mapLengthX", 400.0);
   params.mapLengthY = nhGlobalMap_.param<double>("mapLengthY", 400.0);
 
-  bagSavePath_ = nhGlobalMap_.param<std::string>(
-      "bagSavePath",
+  mapSavePath_ = nhGlobalMap_.param<std::string>(
+      "mapSavePath",
       std::string("/home/") + std::getenv("USER") + "/Downloads");
   return params;
 }
@@ -235,7 +235,7 @@ bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
                                         std_srvs::Empty::Response &res) {
   try {
     // Folder check and creation
-    std::filesystem::path save_path(bagSavePath_);
+    std::filesystem::path save_path(mapSavePath_);
     std::filesystem::path save_dir =
         save_path.has_extension() ? save_path.parent_path() : save_path;
 
@@ -244,16 +244,16 @@ bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
     }
 
     // Save GridMap to bag
-    mapWriter_.writeToBag(globalMapping_->getHeightMap(), bagSavePath_,
+    mapWriter_.writeToBag(globalMapping_->getHeightMap(), mapSavePath_,
                           "/height_mapping/globalmap/gridmap");
 
     // Save GridMap to PCD
     mapWriter_.writeToPCD(globalMapping_->getHeightMap(),
-                          bagSavePath_.substr(0, bagSavePath_.rfind('.')) +
+                          mapSavePath_.substr(0, mapSavePath_.rfind('.')) +
                               ".pcd");
 
     std::cout << "\033[1;33m[HeightMapping::GlobalMapping]: Successfully saved "
-              << "map to " << bagSavePath_ << "\033[0m\n";
+              << "map to " << mapSavePath_ << "\033[0m\n";
 
   } catch (const std::exception &e) {
     std::cout

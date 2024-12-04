@@ -5,7 +5,7 @@
 <launch>
 
   <!-- Sensor pre-processing -->
-  <node pkg="height_mapping" type="sensor_processor_node" name="sensor_processor" output="screen" />
+  <node pkg="height_mapping" type="sensor_processor_node" name="sensor_processor_node" output="screen" />
 
 
 </launch>

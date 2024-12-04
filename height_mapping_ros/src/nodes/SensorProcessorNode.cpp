@@ -11,15 +11,25 @@
 
 SensorProcessorNode::SensorProcessorNode() {
 
+  getNodeParameters();
   getFrameIDs();
-
   setupROSInterface();
 
   getProcessingParameters();
-
   std::cout << "\033[1;32m[HeightMapping::SensorProcessor]: Sensor processor "
                "initialized. Waiting for "
             << inputTopics_.size() << " rgb clouds... \033[0m\n";
+}
+
+void SensorProcessorNode::getNodeParameters() {
+  // Get topic names
+  if (nhPriv_.hasParam("rgbCloudTopics")) {
+    nhPriv_.getParam("rgbCloudTopics", inputTopics_);
+  } else {
+    inputTopics_ = {"/sensor1/points", "/sensor2/points", "/sensor3/points"};
+  }
+  outputCloudTopic_ =
+      nhPriv_.param<std::string>("outputCloudTopic", "points");
 }
 
 void SensorProcessorNode::getFrameIDs() {
@@ -27,22 +37,13 @@ void SensorProcessorNode::getFrameIDs() {
 }
 
 void SensorProcessorNode::setupROSInterface() {
-
-  // Get topics from parameter server
-  if (nhSensorProcessor_.hasParam("rgbCloudTopics")) {
-    nhSensorProcessor_.getParam("rgbCloudTopics", inputTopics_);
-  } else {
-    inputTopics_ = {"/sensor1/points", "/sensor2/points", "/sensor3/points"};
-  }
-
   // Subscribers
   size_t queue_size = 10;
   for (const auto &topic : inputTopics_) {
     cloudSubs_.push_back(
         std::make_shared<CloudSubscriber>(nh_, topic, queue_size));
   }
-
-  // Synchronizer based on number of inputs (2 or 3)
+  // Synchronizer: Based on number of inputs (2 or 3)
   if (cloudSubs_.size() == 2) {
     sync2_.reset(new Synchronizer2(SyncPolicy2(queue_size), *cloudSubs_[0],
                                    *cloudSubs_[1]));
@@ -54,10 +55,7 @@ void SensorProcessorNode::setupROSInterface() {
     sync3_->registerCallback(
         boost::bind(&SensorProcessorNode::syncCallback3, this, _1, _2, _3));
   }
-
   // Publisher
-  outputCloudTopic_ =
-      nhSensorProcessor_.param<std::string>("processedCloudTopic", "points");
   pubProcessedCloud_ =
       nh_.advertise<sensor_msgs::PointCloud2>(outputCloudTopic_, 1);
 }

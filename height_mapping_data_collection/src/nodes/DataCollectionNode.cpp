@@ -18,9 +18,18 @@ DataCollectionNode::DataCollectionNode() {
 }
 
 void DataCollectionNode::getNodeParameters() {
-  publishRate_ = nhDataCollection_.param<double>("publishRate", 10.0); // Hz
+  // Topics
+  subLidarTopic_ =
+      nhPriv_.param<std::string>("lidarCloudTopic", "/velodyne/points");
+
+  // Paths
+  nhPriv_.getParam("globalMapPath", globalMapPath_);
+  nhPriv_.getParam("savePath", dataCollectionPath_);
+
+  // Timers
   dataCollectionPeriod_ =
-      nhDataCollection_.param<double>("dataCollectionPeriod", 1.0); // [s]
+      nhPriv_.param<double>("dataCollectionPeriod", 1.0);    // [s]
+  publishRate_ = nhPriv_.param<double>("publishRate", 10.0); // Hz
 }
 
 void DataCollectionNode::getFrameIDs() {
@@ -28,18 +37,8 @@ void DataCollectionNode::getFrameIDs() {
   baselinkFrame_ = nhFrameID_.param<std::string>("base_link", "base_link");
 }
 
-void DataCollectionNode::setupROSInterface() {
+void DataCollectionNode::setNodeTimers() {
 
-  subLidarTopic_ = nhDataCollection_.param<std::string>("lidarCloudTopic",
-                                                        "/velodyne/points");
-  subLidarScan_ = nh_.subscribe(subLidarTopic_, 1,
-                                &DataCollectionNode::laserCloudCallback, this);
-  pubHeightMap_ = nh_.advertise<grid_map_msgs::GridMap>(
-      "/height_mapping/data_collection/map", 1);
-  pubScan_ = nh_.advertise<sensor_msgs::PointCloud2>(
-      "/height_mapping/data_collection/scan", 1);
-  startCollectionServer_ = nhPriv_.advertiseService(
-      "save_map", &DataCollectionNode::startMapSaverCallback, this);
   dataCollectionTimer_ = nh_.createTimer(
       ros::Duration(dataCollectionPeriod_),
       &DataCollectionNode::dataCollectionTimerCallback, this, false, false);
@@ -48,19 +47,34 @@ void DataCollectionNode::setupROSInterface() {
                                   this, false, false);
 }
 
+void DataCollectionNode::setupROSInterface() {
+  // Subscribers
+  subLidarScan_ = nh_.subscribe(subLidarTopic_, 1,
+                                &DataCollectionNode::laserCloudCallback, this);
+  // Publishers
+  pubHeightMap_ = nh_.advertise<grid_map_msgs::GridMap>(
+      "/height_mapping/data_collection/map", 1);
+  pubScan_ = nh_.advertise<sensor_msgs::PointCloud2>(
+      "/height_mapping/data_collection/scan", 1);
+
+  // Service
+  startCollectionServer_ = nhPriv_.advertiseService(
+      "save_map", &DataCollectionNode::startMapSaverCallback, this);
+}
+
 void DataCollectionNode::getDataCollectionParameters() {
 
-  nhDataCollection_.getParam("globalMapPath", globalMapPath_);
-  nhDataCollection_.getParam("dataCollectionPath", dataCollectionPath_);
-
-  // For height map
-  minHeightThreshold_ = nhMap_.param<double>("minHeightThreshold", -0.2); // [m]
-  maxHeightThreshold_ = nhMap_.param<double>("maxHeightThreshold", 1.5);  // [m]
-  mapLength_.x() = nhMap_.param<double>("mapLengthX", 15.0);              // [m]
-  mapLength_.y() = nhMap_.param<double>("mapLengthY", 15.0);              // [m]
+  // Height map parameters
+  minHeightThreshold_ =
+      nhDataCollection_.param<double>("minHeightThreshold", -0.2); // [m]
+  maxHeightThreshold_ =
+      nhDataCollection_.param<double>("maxHeightThreshold", 1.5);       // [m]
+  mapLength_.x() = nhDataCollection_.param<double>("mapLengthX", 15.0); // [m]
+  mapLength_.y() = nhDataCollection_.param<double>("mapLengthY", 15.0); // [m]
 }
 
 void DataCollectionNode::initialize() {
+
   globalMap_ = mapReader_.openBagFile(globalMapPath_,
                                       "/height_mapping/globalmap/gridmap");
   heightFilter_ = std::make_shared<height_mapping::FastHeightFilter>(
@@ -174,11 +188,12 @@ void DataCollectionNode::dataCollectionTimerCallback(
   // Save height map
   try {
     if (!mapWriter_.writeMap(heightMap_)) {
-      ROS_WARN("[DataCollectionNode] Failed to write height map");
+      std::cout << "\033[1;33m[DataCollectionNode]: Failed to write height "
+                   "map\033[0m\n";
     }
   } catch (const std::exception &e) {
-    ROS_ERROR_STREAM(
-        "[DataCollectionNode] Error writing height map: " << e.what());
+    std::cout << "\033[1;31m[DataCollectionNode]: Error writing height map: "
+              << e.what() << "\033[0m\n";
   }
 }
 
@@ -197,128 +212,6 @@ void DataCollectionNode::publishTimerCallback(const ros::TimerEvent &event) {
 
 bool DataCollectionNode::startMapSaverCallback(std_srvs::Empty::Request &req,
                                                std_srvs::Empty::Response &res) {
-  // std::cout << "\033[1;32m[HeightMapping::DataCollection]: Starting height
-  // map "
-  //              "collection... \033[0m\n";
-
-  // // Read pose data
-  // auto poses = scanReader.readPoses();
-
-  // // Data loop
-  // for (size_t i = 0; i < poses.size(); ++i) {
-
-  //   // Set map position
-  //   heightMapping_->clearMap();
-  //   grid_map::Position position(poses[i].translation().x(),
-  //                               poses[i].translation().y());
-  //   heightMapping_->setMapPosition(position);
-
-  //   // Mapping loop
-  //   for (size_t i = 0; i < poses.size(); ++i) {
-  //     // Create KITTI-style filename (6 digits with leading zeros)
-  //     std::stringstream ss;
-  //     ss << std::setw(6) << std::setfill('0') << i;
-  //     std::string scanFilename = dataCollectionPath_ + "/" + ss.str() +
-  //     ".pcd";
-
-  //     // Read point cloud
-  //     auto cloud = boost::make_shared<pcl::PointCloud<Laser>>();
-  //     if (pcl::io::loadPCDFile<Laser>(scanFilename, *cloud) == -1) {
-  //       ROS_ERROR("Failed to load point cloud: %s", scanFilename.c_str());
-  //       return false;
-  //     }
-  //     cloud->header.frame_id = baselinkFrame_;
-
-  //     if (cloud->empty()) {
-  //       std::cout << "\033[1;33m[HeightMapping::DataCollection]: Empty cloud!
-  //       "
-  //                 << "Skipping... \033[0m\n";
-  //       return false;
-  //     }
-
-  //     if (cloud->header.frame_id != baselinkFrame_) {
-  //       std::cout
-  //           << "\033[1;33m[HeightMapping::DataCollection]: Wrong frame ID! "
-  //           << "Skipping... \033[0m\n";
-  //       std::cout << "Expected: " << baselinkFrame_
-  //                 << ", but got: " << cloud->header.frame_id << std::endl;
-  //       return false;
-  //     }
-
-  //     // Height filtering
-  //     auto filteredCloud = boost::make_shared<pcl::PointCloud<Laser>>();
-  //     heightMapping_->fastHeightFilter<Laser>(cloud, filteredCloud);
-
-  //     auto mapLength = heightMapping_->getHeightMap().getLength();
-  //     filteredCloud = utils::pcl::filterPointcloudByField<Laser>(
-  //         filteredCloud, "x", -mapLength.x(), mapLength.x());
-  //     filteredCloud = utils::pcl::filterPointcloudByField<Laser>(
-  //         filteredCloud, "y", -mapLength.y(), mapLength.y());
-  //     if (removeRemoterPoints_) {
-  //       filteredCloud = utils::pcl::filterPointcloudByAngle<Laser>(
-  //           filteredCloud, -135.0, 135.0);
-  //     }
-  //     // Transform point cloud to map frame using the corresponding pose
-  //     const auto &pose = poses[i];
-
-  //     auto transformedCloud =
-  //         utils::pcl::transformPointcloud<Laser>(filteredCloud, pose);
-
-  //     if (transformedCloud->empty()) {
-  //       std::cout << "\033[1;33m[HeightMapping::DataCollection]: Empty cloud!
-  //       "
-  //                 << "Skipping... \033[0m\n";
-  //       return false;
-  //     }
-
-  //     // Map the filtered cloud
-  //     auto mappedCloud = heightMapping_->mapping<Laser>(transformedCloud);
-
-  //     // Optional: Perform raycasting correction
-  //     Eigen::Vector3f sensorOrigin(pose.transform.translation.x,
-  //                                  pose.transform.translation.y,
-  //                                  pose.transform.translation.z);
-  //     heightMapping_->raycasting<Laser>(sensorOrigin, mappedCloud);
-
-  //     auto map = heightMapping_->getHeightMap();
-  //     // calculate valid cell percentage
-  //     int validCellCount = 0;
-  //     for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd();
-  //          ++iterator) {
-  //       if (map.isValid(*iterator,
-  //                       grid_map::HeightMap::CoreLayers::ELEVATION)) {
-  //         validCellCount++;
-  //       }
-  //     }
-  //     double validCellPercentage =
-  //         static_cast<double>(validCellCount) / map.getSize().prod();
-  //     std::cout << "Valid cell percentage: " << validCellPercentage
-  //               << std::endl;
-  //     if (validCellPercentage > 0.95) {
-  //       break;
-  //     }
-
-  //     // Publish scan
-  //     sensor_msgs::PointCloud2 cloudMsg;
-  //     pcl::toROSMsg(*transformedCloud, cloudMsg);
-  //     pubScan_.publish(cloudMsg);
-
-  //     // Publish height map
-  //     grid_map_msgs::GridMap msg;
-  //     grid_map::GridMapRosConverter::toMessage(heightMapping_->getHeightMap(),
-  //                                              msg);
-  //     pubHeightMap_.publish(msg);
-
-  //     ros::WallDuration(0.01).sleep();
-
-  //   } // Mapping loop end
-
-  //   // sleep
-  //   std::cout
-  //       << "\033[1;32m[HeightMapping::DataCollection]: Published height map!
-  //       "
-  //       << "Sleeping for 0.1 seconds... \033[0m\n";
-  // } // Data loop end
-
-  // return true;
+  // TODO: Implement
+  return true;
 }

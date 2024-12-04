@@ -10,8 +10,7 @@
     <rosparam file="$(find height_mapping_data_collection)/config/params.yaml" command="load" subst_value="true" />
 
     <!-- Data Collection node -->
-    <node pkg="height_mapping_data_collection" type="data_collection_node" name="data_collection" output="screen">
-      <param name="debugMode" value="$(arg debug_mode)" />
+    <node pkg="height_mapping_data_collection" type="data_collection_node" name="data_collection_node" output="screen">
     </node>
 
     <!-- Use grid_map_visualization package for map visualization -->

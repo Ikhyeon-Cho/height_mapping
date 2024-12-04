@@ -4,38 +4,40 @@ frame_id:
   map: "map"
   lidar: "velodyne"
 
-map:
+height_mapping_node:
   lidarCloudTopic: "/velodyne/points"
   rgbCloudTopic: "/height_mapping/sensor_processor/points"
+  robotPoseUpdateRate: 15.0
+  mapPublishRate: 15.0
+  useLidarCallback: true
+  removeRemoterPoints: true
+  debugMode: false
+
+global_mapping_node:
+  mapSavePath: "$(find height_mapping)/../maps/globalmap.bag"
+  mapPublishRate: 10.0
+
+sensor_processor_node: # For multiple rgb-d sensors usage
+  rgbCloudTopics:
+    - "/camera_front/pointcloud/points"
+    - "/camera_left/pointcloud/points"
+    - "/camera_right/pointcloud/points"
+  outputCloudTopic: "/height_mapping/sensor_processor/points"
+
+height_map:
   gridResolution: 0.1 # rgb-d: 0.04, lidar: 0.05 ~ 0.1 [m/grid]
   mapLengthX: 15.0
   mapLengthY: 15.0
   heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
   minHeightThreshold: -0.2 # indoor: -0.05, outdoor: -0.2 [meter]
   maxHeightThreshold: 2.0
-  removeRemoterPoints: true
 
-globalmap:
+global_map:
   gridResolution: 0.1
   mapLengthX: 400
   mapLengthY: 400
-  mapPublishRate: 10.0
-  bagSavePath: "$(find height_mapping)/maps/globalmap.bag"
 
-# For multiple rgb-d sensors usage
 sensor_processor:
-  rgbCloudTopics:
-    - "/camera_front/pointcloud/points"
-    - "/camera_left/pointcloud/points"
-    - "/camera_right/pointcloud/points"
-  processedCloudTopic: "/height_mapping/sensor_processor/points"
   downsamplingResolution: 0.02 # [m/voxel]
-  minRangeThreshold: 0.3
-  maxRangeThreshold: 15.0
-
-data_collection:
-  lidarCloudTopic: "/velodyne/points"
-  dataCollectionPeriod: 1.0 # [s]
-  publishRate: 10.0
-  globalMapPath: "$(find height_mapping)/maps/globalmap.bag"
-  dataCollectionPath: "$(find height_mapping)/data/"
+  minRangeThreshold: 0.3 # [m]
+  maxRangeThreshold: 15.0 # [m]
