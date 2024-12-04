@@ -18,10 +18,9 @@
 #include <pcl/point_cloud.h>
 
 // TF Transform
-#include "transform.h"
+#include "height_mapping_utils/tf/transform.h"
 
 template <typename T> using PointCloud = pcl::PointCloud<T>;
-
 template <typename T> using PointCloudPtr = typename PointCloud<T>::Ptr;
 
 namespace utils {
@@ -34,6 +33,11 @@ namespace pcl {
 /// @param success True if succeed to get transform. False otherwise
 /// @return A shared_ptr of the transformed data. If fails to get transform,
 /// returns nullptr
+namespace {
+  const char* RED = "\033[31m";
+  const char* RESET = "\033[0m";
+}
+
 template <typename T>
 static PointCloudPtr<T>
 transformPointcloud(const PointCloudPtr<T> &input,
@@ -41,14 +45,16 @@ transformPointcloud(const PointCloudPtr<T> &input,
 
   std::string source_frame(input->header.frame_id);
   if (source_frame.empty()) {
-    ROS_ERROR_STREAM(" [utils::pcl] Warning: Transform failure -  pointcloud "
-                     "has no frame id");
+    std::cout << RED 
+              << "[height_mapping::utils::pcl] Warning: Transform failure - pointcloud has no frame id"
+              << RESET << std::endl;
     return input;
   }
 
   if (input->empty()) {
-    ROS_ERROR_STREAM(
-        " [utils::pcl] Warning: Transform failure -  pointcloud is empty");
+    std::cout << RED 
+              << "[height_mapping::utils::pcl] Warning: Transform failure - pointcloud is empty"
+              << RESET << std::endl;
     return input;
   }
 

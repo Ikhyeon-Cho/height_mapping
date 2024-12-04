@@ -9,41 +9,11 @@
 
 #pragma once
 
-// Utility
-#include "utils/TransformHandler.h"
-#include "utils/pointcloud.h"
+#include <height_mapping_utils/height_mapping_utils.h>
 
 // Height Map
-#include "height_mapping_ros/CloudTypes.h"
 #include <height_mapping_core/height_mapping_core.h>
 #include <height_mapping_msgs/HeightMapMsgs.h>
-
-class FastHeightFilter {
-public:
-  FastHeightFilter(float minZ, float maxZ) : minZ_(minZ), maxZ_(maxZ) {}
-
-  template <typename PointT>
-  void filter(const typename pcl::PointCloud<PointT>::Ptr &cloud,
-              typename pcl::PointCloud<PointT>::Ptr &cloudFiltered) {
-    cloudFiltered->header = cloud->header;
-
-    cloudFiltered->points.clear();
-    cloudFiltered->points.reserve(cloud->points.size());
-
-    for (const auto &point : cloud->points) {
-      if (point.z >= minZ_ && point.z <= maxZ_) {
-        cloudFiltered->points.emplace_back(point);
-      }
-    }
-
-    cloudFiltered->width = cloudFiltered->points.size();
-    cloudFiltered->height = 1;
-    cloudFiltered->is_dense = cloud->is_dense;
-  }
-
-private:
-  float minZ_, maxZ_;
-};
 
 class HeightMapping {
 public:
@@ -78,7 +48,11 @@ public:
 
   void updateMapOrigin(const grid_map::Position &position);
 
-  const grid_map::HeightMap &getHeightMap() const;
+  const grid_map::HeightMap &getHeightMap() const { return map_; }
+  void setMapPosition(const grid_map::Position &position) {
+    map_.setPosition(position);
+  }
+  void clearMap() { map_.clearAll(); }
 
 private:
   void paramValidityCheck();
@@ -105,7 +79,7 @@ private:
   grid_map::HeightMap map_;
   Parameters params_;
 
-  FastHeightFilter heightFilter_;
+  height_mapping::FastHeightFilter heightFilter_;
   height_mapping::HeightEstimatorBase::Ptr heightEstimator_;
   height_mapping::HeightMapRaycaster raycaster_;
 

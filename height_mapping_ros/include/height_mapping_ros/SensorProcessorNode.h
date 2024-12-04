@@ -17,9 +17,8 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include "height_mapping_ros/CloudTypes.h"
-#include "utils/TransformHandler.h"
-#include "utils/pointcloud.h"
+#include <height_mapping_core/height_mapping_core.h>
+#include <height_mapping_utils/height_mapping_utils.h>
 
 class SensorProcessorNode {
 public:
@@ -27,6 +26,7 @@ public:
   ~SensorProcessorNode() = default;
 
 private:
+  void getNodeParameters();
   void getFrameIDs();
   void setupROSInterface();
   void getProcessingParameters();

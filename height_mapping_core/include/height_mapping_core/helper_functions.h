@@ -1,5 +1,5 @@
 /*
- * cloud_utils.h
+ * helper_functions.h
  *
  *  Created on: Nov 25, 2024
  *      Author: Ikhyeon Cho

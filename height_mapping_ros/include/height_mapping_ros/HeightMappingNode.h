@@ -14,8 +14,8 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <height_mapping_utils/height_mapping_utils.h>
 #include "height_mapping_ros/HeightMapping.h"
-#include "utils/TransformHandler.h"
 
 class HeightMappingNode {
 public:
@@ -25,19 +25,19 @@ public:
 private:
   void getNodeParameters();
   void getFrameIDs();
-  void setTimers();
+  void setNodeTimers();
   HeightMapping::Parameters getHeightMappingParameters();
   void setupROSInterface();
 
   void laserCloudCallback(const sensor_msgs::PointCloud2Ptr &msg);
   void rgbCloudCallback(const sensor_msgs::PointCloud2Ptr &msg);
-  void updateRobotPose(const ros::TimerEvent &event);
+  void updateMapOrigin(const ros::TimerEvent &event);
   void publishMap(const ros::TimerEvent &event);
 
   // ROS members
   ros::NodeHandle nh_;                         // "/height_mapping/"
   ros::NodeHandle nhPriv_{"~"};                // "/height_mapping/{node_name}"
-  ros::NodeHandle nhMap_{nh_, "map"};          // "/height_mapping/map/"
+  ros::NodeHandle nhMap_{nh_, "height_map"};          // "/height_mapping/height_map/"
   ros::NodeHandle nhFrameID_{nh_, "frame_id"}; // "/height_mapping/frame_id/"
 
   // Frame IDs

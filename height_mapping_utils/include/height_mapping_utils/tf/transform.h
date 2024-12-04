@@ -7,10 +7,8 @@
  *       Email: tre0430@korea.ac.kr
  */
 
-#ifndef ROS_UTILS_TRANSFORM_H
-#define ROS_UTILS_TRANSFORM_H
+#pragma once
 
-// ROS TF
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -123,5 +121,3 @@ combineTransforms(const geometry_msgs::TransformStamped &transform1,
 }
 } // namespace tf
 } // namespace utils
-
-#endif // ROS_UTILS_TRANSFORM_H

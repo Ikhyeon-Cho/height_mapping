@@ -17,11 +17,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
 
-#include "height_mapping_io/height_mapping_io.h"
-#include "height_mapping_ros/CloudTypes.h"
 #include "height_mapping_ros/GlobalMapping.h"
-#include "utils/pointcloud.h"
-#include "utils/TransformHandler.h"
+#include <height_mapping_io/height_mapping_io.h>
+#include <height_mapping_utils/height_mapping_utils.h>
 
 class GlobalMappingNode {
 public:
@@ -31,7 +29,7 @@ public:
 private:
   void getNodeParameters();
   void getFrameIDs();
-  void setTimers();
+  void setNodeTimers();
   void setupROSInterface();
   GlobalMapping::Parameters getGlobalMappingParameters();
 
@@ -54,8 +52,8 @@ private:
   // ROS members
   ros::NodeHandle nh_;                // "/height_mapping/"
   ros::NodeHandle nhPriv_{"~"};       // "/height_mapping/global_mapping"
-  ros::NodeHandle nhMap_{nh_, "map"}; // "/height_mapping/map/"
-  ros::NodeHandle nhGlobalMap_{nh_, "globalmap"};
+  ros::NodeHandle nhMap_{nh_, "height_map"}; // "/height_mapping/height_map/"
+  ros::NodeHandle nhGlobalMap_{nh_, "global_map"};
   ros::NodeHandle nhFrameID_{nh_, "frame_id"};
 
   // Subscribers
@@ -76,11 +74,12 @@ private:
   // Frame IDs
   std::string mapFrame_;
   std::string baselinkFrame_;
+  std::string lidarFrame_;
 
   // Parameters
   bool debugMode_{false};
   double mapPublishRate_;
-  std::string bagSavePath_;
+  std::string mapSavePath_;
 
   // Core mapping object
   std::unique_ptr<GlobalMapping> globalMapping_;

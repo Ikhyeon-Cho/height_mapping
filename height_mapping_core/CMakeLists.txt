@@ -35,6 +35,7 @@ add_library(${PROJECT_NAME}
   src/MovingAverageEstimator.cpp
   src/StatMeanEstimator.cpp
   src/HeightMapRaycaster.cpp
+  src/FastHeightFilter.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

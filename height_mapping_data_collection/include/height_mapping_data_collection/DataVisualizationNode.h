@@ -2,7 +2,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include "height_mapping_ros/CloudTypes.h"
+#include <height_mapping_core/height_mapping_core.h>
 #include <filesystem>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/wall_timer.h>

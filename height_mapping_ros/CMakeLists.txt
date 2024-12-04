@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
     height_mapping_core
     height_mapping_msgs
     height_mapping_io
+    height_mapping_utils
 )
 catkin_package(
   INCLUDE_DIRS 
@@ -22,6 +23,7 @@ catkin_package(
     height_mapping_core
     height_mapping_msgs
     height_mapping_io
+    height_mapping_utils
 )
 
 ###########
@@ -67,34 +69,4 @@ target_link_libraries(global_mapping_node
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
-)
-
-# Data collection node
-add_executable(data_collection_node 
-  src/executables/data_collection_main.cpp
-  src/nodes/DataCollectionNode.cpp
-)
-target_link_libraries(data_collection_node
-  ${PCL_LIBRARIES}
-  ${catkin_LIBRARIES}
-)
-
-# Data visualization node
-add_executable(data_visualization_node 
-  src/executables/data_visualization_main.cpp
-  src/nodes/DataVisualizationNode.cpp
-)
-target_link_libraries(data_visualization_node
-  ${PCL_LIBRARIES}
-  ${catkin_LIBRARIES}
-)
-
-# Height map generator node
-add_executable(height_map_generator_node 
-  src/executables/height_map_generator_main.cpp
-  src/nodes/HeightMapGeneratorNode.cpp
-)
-target_link_libraries(height_map_generator_node
-  ${PCL_LIBRARIES}
-  ${catkin_LIBRARIES}
 )

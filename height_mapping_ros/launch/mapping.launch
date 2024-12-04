@@ -22,24 +22,17 @@
     </group>
 
     <!-- Mapping node -->
-    <node pkg="height_mapping" type="height_mapping_node" name="height_mapping" output="screen">
-      <param name="robotPoseUpdateRate" value="15.0" />
-      <param name="mapPublishRate" value="15.0" />
-      <param name="debugMode" value="$(arg debug_mode)" />
-      <param name="useLidarCallback" value="$(arg use_lidar)" />
+    <node pkg="height_mapping" type="height_mapping_node" name="height_mapping_node" output="screen">
     </node>
 
     <!-- Use grid_map_visualization package for map visualization -->
-    <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="log">
+    <node pkg="grid_map_visualization" type="grid_map_visualization" name="map_visualization_node" output="log">
       <rosparam file="$(find height_mapping)/config/visualization.yaml" />
-      <param name="debugMode" value="$(arg debug_mode)" />
     </node>
 
     <!-- Global mapping node -->
     <group if="$(arg global_mapping)">
-      <node pkg="height_mapping" type="global_mapping_node" name="global_mapping" output="screen">
-        <param name="mapPublishRate" value="10.0" />
-      </node>
+      <node pkg="height_mapping" type="global_mapping_node" name="global_mapping_node" output="screen" />
     </group>
   </group>
 

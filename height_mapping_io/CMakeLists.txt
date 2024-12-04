@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(height_mapping_io)
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 find_package(PCL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  height_mapping_core
   grid_map_ros
   grid_map_msgs
   pcl_ros
@@ -19,6 +20,7 @@ catkin_package(
     ${PROJECT_NAME}
   CATKIN_DEPENDS
     roscpp
+    height_mapping_core
     grid_map_ros
     grid_map_msgs
     pcl_ros
@@ -44,6 +46,9 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_library(${PROJECT_NAME}
   src/HeightMapReader.cpp
   src/HeightMapWriter.cpp
+  src/KITTIScanReader.cpp
+  src/KITTIScanWriter.cpp
+  src/KITTIMapWriter.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

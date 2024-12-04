@@ -8,6 +8,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>height_mapping_core</depend>
   <depend>roscpp</depend>
   <depend>grid_map_ros</depend>
   <depend>grid_map_msgs</depend>

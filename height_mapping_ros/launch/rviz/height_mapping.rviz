@@ -26,7 +26,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: InputLaserScan
+    SyncSource: RegisteredLaserScan
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -55,7 +55,7 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/Axes
       Enabled: true
-      Length: 1
+      Length: 0.5
       Name: Baselink
       Radius: 0.10000000149011612
       Reference Frame: base_link
@@ -73,7 +73,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -85,6 +85,34 @@ Visualization Manager:
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /velodyne/points
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 1.8241233825683594
+        Min Value: -0.2472304254770279
+        Value: true
+      Axis: Z
+      Channel Name: z
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: RegisteredLaserScan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 2
+      Size (m): 0.03999999910593033
+      Style: Spheres
+      Topic: /height_mapping/mapping/lasercloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -109,6 +137,14 @@ Visualization Manager:
       Topic: /height_mapping/map/gridmap
       Unreliable: false
       Use Rainbow: true
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /height_mapping/map/region
+      Name: HeightMapRegion
+      Namespaces:
+        map_region: true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
@@ -138,7 +174,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 31.88617515563965
+      Distance: 31.713895797729492
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -154,9 +190,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.80539870262146
+      Pitch: 0.5647976994514465
       Target Frame: base_link
-      Yaw: 2.4235692024230957
+      Yaw: 3.5735905170440674
     Saved: ~
 Window Geometry:
   Displays:

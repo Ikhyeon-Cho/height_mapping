@@ -11,7 +11,7 @@
 
 #include <grid_map_cv/GridMapCvConverter.hpp>
 #include <grid_map_ros/GridMapRosConverter.hpp>
-#include <height_mapping_core/map/HeightMap.h>
+#include <height_mapping_core/height_mapping_core.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
 class HeightMapConverter {

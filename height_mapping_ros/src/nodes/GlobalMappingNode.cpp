@@ -15,7 +15,7 @@ GlobalMappingNode::GlobalMappingNode() {
 
   getFrameIDs();
 
-  setTimers();
+  setNodeTimers();
 
   setupROSInterface();
 
@@ -30,9 +30,10 @@ void GlobalMappingNode::getNodeParameters() {
 void GlobalMappingNode::getFrameIDs() {
   baselinkFrame_ = nhFrameID_.param<std::string>("base_link", "base_link");
   mapFrame_ = nhFrameID_.param<std::string>("map", "map");
+  lidarFrame_ = nhFrameID_.param<std::string>("lidar", "velodyne");
 }
 
-void GlobalMappingNode::setTimers() {
+void GlobalMappingNode::setNodeTimers() {
   mapPublishTimer_ =
       nhPriv_.createTimer(ros::Duration(1.0 / mapPublishRate_),
                           &GlobalMappingNode::publishMap, this, false, false);
@@ -70,12 +71,13 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
   params.mapLengthX = nhGlobalMap_.param<double>("mapLengthX", 400.0);
   params.mapLengthY = nhGlobalMap_.param<double>("mapLengthY", 400.0);
 
-  bagSavePath_ = nhGlobalMap_.param<std::string>(
-      "bagSavePath",
+  mapSavePath_ = nhGlobalMap_.param<std::string>(
+      "mapSavePath",
       std::string("/home/") + std::getenv("USER") + "/Downloads");
   return params;
 }
 
+// Use the preprocessed cloud in height mapping node
 void GlobalMappingNode::laserCloudCallback(
     const sensor_msgs::PointCloud2Ptr &msg) {
 
@@ -90,7 +92,7 @@ void GlobalMappingNode::laserCloudCallback(
   pcl::moveFromROSMsg(*msg, cloud);
   globalMapping_->mapping(cloud);
 
-  auto [get, laser2Map] = tf_.getTransform("velodyne", mapFrame_); // TODO
+  auto [get, laser2Map] = tf_.getTransform(lidarFrame_, mapFrame_);
   if (!get)
     return;
   Eigen::Vector3f laserPosition3D(laser2Map.transform.translation.x,
@@ -116,22 +118,29 @@ void GlobalMappingNode::rgbCloudCallback(
 
 void GlobalMappingNode::publishMap(const ros::TimerEvent &) {
 
+  std::vector<std::string> layers = {
+      grid_map::HeightMap::CoreLayers::ELEVATION,
+      grid_map::HeightMap::CoreLayers::ELEVATION_MAX,
+      grid_map::HeightMap::CoreLayers::ELEVATION_MIN,
+      grid_map::HeightMap::CoreLayers::VARIANCE,
+      grid_map::HeightMap::CoreLayers::N_MEASUREMENTS,
+
+  };
   // Visualize global map
-  sensor_msgs::PointCloud2 cloud_msg;
-  std::vector<std::string> layers = globalMapping_->getHeightMap().getLayers();
+  sensor_msgs::PointCloud2 msgCloud;
   toPointCloud2(globalMapping_->getHeightMap(), layers,
-                globalMapping_->getMeasuredGridIndices(), cloud_msg);
-  pubGlobalMap_.publish(cloud_msg);
+                globalMapping_->getMeasuredGridIndices(), msgCloud);
+  pubGlobalMap_.publish(msgCloud);
 
   // Visualize map region
-  visualization_msgs::Marker msg_map_region;
-  HeightMapMsgs::toMapRegion(globalMapping_->getHeightMap(), msg_map_region);
-  pubMapRegion_.publish(msg_map_region);
+  visualization_msgs::Marker msgRegion;
+  HeightMapMsgs::toMapRegion(globalMapping_->getHeightMap(), msgRegion);
+  pubMapRegion_.publish(msgRegion);
 }
 
 void GlobalMappingNode::toPointCloud2(
     const grid_map::HeightMap &map, const std::vector<std::string> &layers,
-    const std::unordered_set<grid_map::Index> &measured_indices,
+    const std::unordered_set<grid_map::Index> &measuredIndices,
     sensor_msgs::PointCloud2 &cloud) {
 
   // Setup cloud header
@@ -143,10 +152,10 @@ void GlobalMappingNode::toPointCloud2(
   std::vector<std::string> fieldNames;
   fieldNames.reserve(layers.size());
 
+  // Setup field names
+  fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
   for (const auto &layer : layers) {
-    if (layer == grid_map::HeightMap::CoreLayers::ELEVATION) {
-      fieldNames.insert(fieldNames.end(), {"x", "y", "z"});
-    } else if (layer == "color") {
+    if (layer == "color") {
       fieldNames.push_back("rgb");
     } else {
       fieldNames.push_back(layer);
@@ -169,7 +178,7 @@ void GlobalMappingNode::toPointCloud2(
   }
 
   // Initialize cloud size
-  const size_t num_points = measured_indices.size();
+  const size_t num_points = measuredIndices.size();
   cloud.height = 1;
   cloud.width = num_points;
   cloud.point_step = offset;
@@ -185,8 +194,8 @@ void GlobalMappingNode::toPointCloud2(
   }
 
   // Fill point cloud data
-  size_t valid_points = 0;
-  for (const auto &index : measured_indices) {
+  size_t validPoints = 0;
+  for (const auto &index : measuredIndices) {
     grid_map::Position3 position;
     if (!map.getPosition3(grid_map::HeightMap::CoreLayers::ELEVATION, index,
                           position)) {
@@ -194,24 +203,24 @@ void GlobalMappingNode::toPointCloud2(
     }
 
     // Update each field
-    for (auto &[field_name, iterator] : iterators) {
-      if (field_name == "x")
+    for (auto &[fieldName, iterator] : iterators) {
+      if (fieldName == "x")
         *iterator = static_cast<float>(position.x());
-      else if (field_name == "y")
+      else if (fieldName == "y")
         *iterator = static_cast<float>(position.y());
-      else if (field_name == "z")
+      else if (fieldName == "z")
         *iterator = static_cast<float>(position.z());
-      else if (field_name == "rgb")
+      else if (fieldName == "rgb")
         *iterator = static_cast<float>(map.at("color", index));
       else
-        *iterator = static_cast<float>(map.at(field_name, index));
+        *iterator = static_cast<float>(map.at(fieldName, index));
       ++iterator;
     }
-    ++valid_points;
+    ++validPoints;
   }
 
   // Adjust final cloud size
-  cloud.width = valid_points;
+  cloud.width = validPoints;
   cloud.row_step = cloud.width * cloud.point_step;
   cloud.data.resize(cloud.height * cloud.row_step);
 }
@@ -226,7 +235,7 @@ bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
                                         std_srvs::Empty::Response &res) {
   try {
     // Folder check and creation
-    std::filesystem::path save_path(bagSavePath_);
+    std::filesystem::path save_path(mapSavePath_);
     std::filesystem::path save_dir =
         save_path.has_extension() ? save_path.parent_path() : save_path;
 
@@ -235,16 +244,16 @@ bool GlobalMappingNode::saveMapCallback(std_srvs::Empty::Request &req,
     }
 
     // Save GridMap to bag
-    mapWriter_.writeToBag(globalMapping_->getHeightMap(), bagSavePath_,
+    mapWriter_.writeToBag(globalMapping_->getHeightMap(), mapSavePath_,
                           "/height_mapping/globalmap/gridmap");
 
     // Save GridMap to PCD
     mapWriter_.writeToPCD(globalMapping_->getHeightMap(),
-                          bagSavePath_.substr(0, bagSavePath_.rfind('.')) +
+                          mapSavePath_.substr(0, mapSavePath_.rfind('.')) +
                               ".pcd");
 
     std::cout << "\033[1;33m[HeightMapping::GlobalMapping]: Successfully saved "
-              << "map to " << bagSavePath_ << "\033[0m\n";
+              << "map to " << mapSavePath_ << "\033[0m\n";
 
   } catch (const std::exception &e) {
     std::cout
