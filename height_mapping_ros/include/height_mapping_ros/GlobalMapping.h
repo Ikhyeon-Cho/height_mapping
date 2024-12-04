@@ -17,9 +17,6 @@
 #include <opencv2/opencv.hpp>
 #include <unordered_set>
 
-// Point types
-#include "height_mapping_ros/CloudTypes.h"
-
 namespace std {
 template <> struct hash<grid_map::Index> {
   std::size_t operator()(const grid_map::Index &index) const {

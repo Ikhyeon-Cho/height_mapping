@@ -1,6 +1,6 @@
 #pragma once
 
-#include "height_mapping_ros/CloudTypes.h"
+#include <height_mapping_core/height_mapping_core.h>
 #include <filesystem>
 #include <grid_map_msgs/GridMap.h>
 #include <grid_map_ros/grid_map_ros.hpp>

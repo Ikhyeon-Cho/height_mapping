@@ -2,6 +2,7 @@ frame_id:
   base_link: "base_link"
   odom: "odom"
   map: "map"
+  lidar: "velodyne"
 
 map:
   lidarCloudTopic: "/velodyne/points"
@@ -11,7 +12,8 @@ map:
   mapLengthY: 15.0
   heightEstimatorType: "StatMean" # "StatMean", "KalmanFilter", "MovingAverage"
   minHeightThreshold: -0.2 # indoor: -0.05, outdoor: -0.2 [meter]
-  maxHeightThreshold: 1.7
+  maxHeightThreshold: 2.0
+  removeRemoterPoints: true
 
 globalmap:
   gridResolution: 0.1
@@ -33,6 +35,7 @@ sensor_processor:
 
 data_collection:
   lidarCloudTopic: "/velodyne/points"
-  poseUpdateRate: 10.0
+  dataCollectionPeriod: 1.0 # [s]
+  publishRate: 10.0
   globalMapPath: "$(find height_mapping)/maps/globalmap.bag"
-  dataCollectionPath: "$(find height_mapping)/maps/"
+  dataCollectionPath: "$(find height_mapping)/data/"

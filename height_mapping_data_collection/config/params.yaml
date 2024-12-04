@@ -1,0 +1,16 @@
+data_collection:
+  publishRate: 10.0  # Hz
+  dataCollectionPeriod: 1.0  # seconds
+  lidarCloudTopic: "/velodyne/points"
+  globalMapPath: "maps/globalmap.bag"
+  dataCollectionPath: "maps/"
+
+map:
+  minHeightThreshold: -0.2  # meters
+  maxHeightThreshold: 1.5   # meters
+  mapLengthX: 15.0         # meters
+  mapLengthY: 15.0         # meters
+
+frame_id:
+  map: "map"
+  base_link: "base_link" 

@@ -1,4 +1,4 @@
-#include "height_mapping_ros/DataCollectionNode.h"
+#include "height_mapping_data_collection/DataCollectionNode.h"
 #include <ros/ros.h>
 
 int main(int argc, char **argv) {

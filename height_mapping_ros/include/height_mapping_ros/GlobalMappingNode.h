@@ -17,11 +17,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
 
-#include "height_mapping_io/height_mapping_io.h"
-#include "height_mapping_ros/CloudTypes.h"
 #include "height_mapping_ros/GlobalMapping.h"
-#include "utils/pointcloud.h"
-#include "utils/TransformHandler.h"
+#include <height_mapping_io/height_mapping_io.h>
+#include <height_mapping_utils/height_mapping_utils.h>
 
 class GlobalMappingNode {
 public:
@@ -76,6 +74,7 @@ private:
   // Frame IDs
   std::string mapFrame_;
   std::string baselinkFrame_;
+  std::string lidarFrame_;
 
   // Parameters
   bool debugMode_{false};

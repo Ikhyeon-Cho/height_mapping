@@ -29,8 +29,8 @@ void HeightMappingNode::getNodeParameters() {
   robotPoseUpdateRate_ =
       nhPriv_.param<double>("robotPoseUpdateRate", 20.0);          // [Hz]
   mapPublishRate_ = nhPriv_.param<double>("mapPublishRate", 10.0); // [Hz]
-  debugMode_ = nhPriv_.param<bool>("debugMode", false);
   useLidarCallback_ = nhPriv_.param<bool>("useLidarCallback", true);
+  debugMode_ = nhPriv_.param<bool>("debugMode", false);
 }
 
 void HeightMappingNode::getFrameIDs() {
@@ -43,7 +43,7 @@ void HeightMappingNode::setTimers() {
 
   robotPoseUpdateTimer_ = nhPriv_.createTimer(
       ros::Duration(1.0 / robotPoseUpdateRate_),
-      &HeightMappingNode::updateRobotPose, this, false, false);
+      &HeightMappingNode::updateMapOrigin, this, false, false);
   mapPublishTimer_ =
       nhPriv_.createTimer(ros::Duration(1.0 / mapPublishRate_),
                           &HeightMappingNode::publishMap, this, false, false);
@@ -82,6 +82,7 @@ void HeightMappingNode::setupROSInterface() {
 
 HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
 
+  // Mapping parameters
   HeightMapping::Parameters params;
   params.mapFrame = mapFrame_;
   params.mapLengthX = nhMap_.param<double>("mapLengthX", 15.0); // [m]
@@ -92,6 +93,9 @@ HeightMapping::Parameters HeightMappingNode::getHeightMappingParameters() {
       nhMap_.param<std::string>("heightEstimatorType", "StatMean");
   params.minHeight = nhMap_.param<double>("minHeightThreshold", -0.2); // [m]
   params.maxHeight = nhMap_.param<double>("maxHeightThreshold", 1.5);  // [m]
+
+  // Options
+  removeRemoterPoints_ = nhMap_.param<bool>("removeRemoterPoints", true);
 
   return params;
 }
@@ -120,35 +124,43 @@ void HeightMappingNode::laserCloudCallback(
   auto inputCloud = boost::make_shared<pcl::PointCloud<Laser>>();
   auto processedCloud = boost::make_shared<pcl::PointCloud<Laser>>();
 
-  // Process pointcloud
+  // Get pointcloud in baselink frame
   pcl::moveFromROSMsg(*msg, *inputCloud);
   auto baselinkCloud =
       utils::pcl::transformPointcloud<Laser>(inputCloud, laser2Baselink);
 
-  auto filteredCloud = boost::make_shared<pcl::PointCloud<Laser>>();
-  heightMapping_->fastHeightFilter<Laser>(baselinkCloud, filteredCloud);
+  // Preprocess pointcloud
+  auto baselinkCloudFiltered = boost::make_shared<pcl::PointCloud<Laser>>();
+  heightMapping_->fastHeightFilter<Laser>(baselinkCloud, baselinkCloudFiltered);
 
-  auto mapLength = heightMapping_->getHeightMap().getLength();
-  filteredCloud = utils::pcl::filterPointcloudByField<Laser>(
-      filteredCloud, "x", -mapLength.x(), mapLength.x());
-  filteredCloud = utils::pcl::filterPointcloudByField<Laser>(
-      filteredCloud, "y", -mapLength.y(), mapLength.y());
+  auto range = heightMapping_->getHeightMap().getLength() / 2.0;
+  processedCloud = utils::pcl::filterPointcloudByField<Laser>(
+      baselinkCloudFiltered, "x", -range.x(), range.x());
+  processedCloud = utils::pcl::filterPointcloudByField<Laser>(
+      processedCloud, "y", -range.y(), range.y());
+
+  auto cloudForRaycasting = boost::make_shared<pcl::PointCloud<Laser>>();
+  *cloudForRaycasting = *processedCloud;
+
+  // Remove remoter points
   if (removeRemoterPoints_) {
-    filteredCloud = utils::pcl::filterPointcloudByAngle<Laser>(filteredCloud,
-                                                               -135.0, 135.0);
+    processedCloud = utils::pcl::filterPointcloudByAngle<Laser>(processedCloud,
+                                                                -135.0, 135.0);
   }
-  processedCloud =
-      utils::pcl::transformPointcloud<Laser>(filteredCloud, baselink2Map);
+  auto cloudForMapping =
+      utils::pcl::transformPointcloud<Laser>(processedCloud, baselink2Map);
 
-  // Mapping
-  auto mappedLaserCloud = heightMapping_->mapping<Laser>(processedCloud);
+  // Height mapping
+  auto mappedLaserCloud = heightMapping_->mapping<Laser>(cloudForMapping);
 
-  // Raycasting correction (for dynamic objects)
+  // Raycasting correction: remove dynamic objects
+  cloudForRaycasting =
+      utils::pcl::transformPointcloud<Laser>(cloudForRaycasting, baselink2Map);
   auto laser2Map = utils::tf::combineTransforms(laser2Baselink, baselink2Map);
   Eigen::Vector3f laserPosition3D(laser2Map.transform.translation.x,
                                   laser2Map.transform.translation.y,
                                   laser2Map.transform.translation.z);
-  heightMapping_->raycasting<Laser>(laserPosition3D, mappedLaserCloud);
+  heightMapping_->raycasting<Laser>(laserPosition3D, cloudForRaycasting);
 
   // Publish pointcloud used for mapping
   sensor_msgs::PointCloud2 cloudMsg;
@@ -158,7 +170,7 @@ void HeightMappingNode::laserCloudCallback(
   // Debug: publish pointcloud that you want to see
   if (debugMode_) {
     sensor_msgs::PointCloud2 debugMsg;
-    pcl::toROSMsg(*processedCloud, debugMsg);
+    pcl::toROSMsg(*cloudForRaycasting, debugMsg);
     pubDebugLaserCloud_.publish(debugMsg);
   }
 }
@@ -213,7 +225,7 @@ void HeightMappingNode::rgbCloudCallback(
   }
 }
 
-void HeightMappingNode::updateRobotPose(const ros::TimerEvent &event) {
+void HeightMappingNode::updateMapOrigin(const ros::TimerEvent &event) {
 
   auto [success, baselink2Map] = tf_.getTransform(baselinkFrame_, mapFrame_);
   if (!success)

@@ -13,6 +13,7 @@
   <depend>height_mapping_core</depend>
   <depend>height_mapping_msgs</depend>
   <depend>height_mapping_io</depend>
+  <depend>height_mapping_utils</depend>
   <export>
   </export>
 </package>

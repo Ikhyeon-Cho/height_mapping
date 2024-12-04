@@ -7,22 +7,21 @@
 
   <group ns="height_mapping">
     <!-- Load parameters -->
-    <rosparam file="$(find height_mapping)/config/params.yaml" command="load" subst_value="true" />
+    <rosparam file="$(find height_mapping_data_collection)/config/params.yaml" command="load" subst_value="true" />
 
     <!-- Data Collection node -->
-    <node pkg="height_mapping" type="data_collection_node" name="data_collection" output="screen">
+    <node pkg="height_mapping_data_collection" type="data_collection_node" name="data_collection" output="screen">
       <param name="debugMode" value="$(arg debug_mode)" />
     </node>
 
     <!-- Use grid_map_visualization package for map visualization -->
     <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="log">
-      <rosparam file="$(find height_mapping)/config/visualization.yaml" />
+      <rosparam file="$(find height_mapping_data_collection)/config/visualization.yaml" />
     </node>
 
     <!-- Rviz -->
-    <include file="$(find height_mapping)/launch/include/rviz.launch.xml">
-      <arg name="global_mapping" value="true" />
-    </include>
+    <node pkg="rviz" type="rviz" name="$(anon rviz)" output="log"
+      args="-d $(find height_mapping_data_collection)/launch/rviz/data_collection.rviz" />
   </group>
 
 </launch>

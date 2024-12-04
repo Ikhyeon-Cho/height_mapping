@@ -30,6 +30,7 @@ void GlobalMappingNode::getNodeParameters() {
 void GlobalMappingNode::getFrameIDs() {
   baselinkFrame_ = nhFrameID_.param<std::string>("base_link", "base_link");
   mapFrame_ = nhFrameID_.param<std::string>("map", "map");
+  lidarFrame_ = nhFrameID_.param<std::string>("lidar", "velodyne");
 }
 
 void GlobalMappingNode::setTimers() {
@@ -76,6 +77,7 @@ GlobalMapping::Parameters GlobalMappingNode::getGlobalMappingParameters() {
   return params;
 }
 
+// Use the preprocessed cloud in height mapping node
 void GlobalMappingNode::laserCloudCallback(
     const sensor_msgs::PointCloud2Ptr &msg) {
 
@@ -90,7 +92,7 @@ void GlobalMappingNode::laserCloudCallback(
   pcl::moveFromROSMsg(*msg, cloud);
   globalMapping_->mapping(cloud);
 
-  auto [get, laser2Map] = tf_.getTransform("velodyne", mapFrame_); // TODO
+  auto [get, laser2Map] = tf_.getTransform(lidarFrame_, mapFrame_);
   if (!get)
     return;
   Eigen::Vector3f laserPosition3D(laser2Map.transform.translation.x,
@@ -116,8 +118,14 @@ void GlobalMappingNode::rgbCloudCallback(
 
 void GlobalMappingNode::publishMap(const ros::TimerEvent &) {
 
-  std::vector<std::string> layers = {grid_map::HeightMap::CoreLayers::ELEVATION,
-                                     "intensity"};
+  std::vector<std::string> layers = {
+      grid_map::HeightMap::CoreLayers::ELEVATION,
+      grid_map::HeightMap::CoreLayers::ELEVATION_MAX,
+      grid_map::HeightMap::CoreLayers::ELEVATION_MIN,
+      grid_map::HeightMap::CoreLayers::VARIANCE,
+      grid_map::HeightMap::CoreLayers::N_MEASUREMENTS,
+
+  };
   // Visualize global map
   sensor_msgs::PointCloud2 msgCloud;
   toPointCloud2(globalMapping_->getHeightMap(), layers,
