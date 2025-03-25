@@ -6,7 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /HeightMap1
+        - /Heightmap (Global)1
       Splitter Ratio: 0.43257442116737366
     Tree Height: 1799
   - Class: rviz/Selection
@@ -26,7 +26,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: InputLaserScan
+    SyncSource: Input Scan (LiDAR)
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -49,14 +49,30 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
-      Reference Frame: <Fixed Frame>
+      Plane Cell Count: 400
+      Reference Frame: map
       Value: false
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: false
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+      Name: RobotModel
+      Robot Description: robot_description
+      TF Prefix: ""
+      Update Interval: 0
+      Value: false
+      Visual Enabled: true
     - Alpha: 1
       Class: rviz/Axes
       Enabled: true
       Length: 0.5
-      Name: Baselink
+      Name: base_link
       Radius: 0.10000000149011612
       Reference Frame: base_link
       Show Trail: false
@@ -70,114 +86,92 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 255; 255; 255
+      Color: 238; 238; 236
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: InputLaserScan
+      Name: Input Scan (LiDAR)
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 2
+      Size (Pixels): 1
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /velodyne/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
-    - Alpha: 1
+      Value: false
+    - Alpha: 0.699999988079071
       Autocompute Intensity Bounds: true
-      Class: grid_map_rviz_plugin/GridMap
-      Color: 200; 200; 200
-      Color Layer: elevation
-      Color Transformer: GridMapLayer
+      Autocompute Value Bounds:
+        Max Value: 3.0109567642211914
+        Min Value: 0.9433802366256714
+        Value: true
+      Axis: Z
+      Channel Name: z
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
       Enabled: true
-      Height Layer: elevation
-      Height Transformer: GridMapLayer
-      History Length: 1
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 10
       Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: HeightMap
-      Show Grid Lines: true
-      Topic: /height_mapping/map/gridmap
+      Name: Rasterized Scan (LiDAR)
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.10000000149011612
+      Style: Boxes
+      Topic: /height_mapping/global/scan_rasterized
       Unreliable: false
-      Use Rainbow: true
+      Use Fixed Frame: true
+      Use rainbow: true
       Value: true
-    - Class: rviz/TF
+    - Alpha: 0.8999999761581421
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 2.4827396869659424
+        Min Value: -0.4342028796672821
+        Value: true
+      Axis: Z
+      Channel Name: z
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
       Enabled: true
-      Filter (blacklist): ""
-      Filter (whitelist): ""
-      Frame Timeout: 15
-      Frames:
-        All Enabled: true
-        base_link:
-          Value: true
-        camera_left_color_optical_frame:
-          Value: true
-        camera_left_depth_optical_frame:
-          Value: true
-        camera_left_link:
-          Value: true
-        camera_right_aligned_depth_to_color_frame:
-          Value: true
-        camera_right_color_frame:
-          Value: true
-        camera_right_color_optical_frame:
-          Value: true
-        camera_right_depth_frame:
-          Value: true
-        camera_right_depth_optical_frame:
-          Value: true
-        camera_right_link:
-          Value: true
-        map:
-          Value: true
-        velodyne:
-          Value: true
-        zed2_base_link:
-          Value: true
-        zed2_left_camera_optical_frame:
-          Value: true
-      Marker Alpha: 1
-      Marker Scale: 1
-      Name: TF
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Tree:
-        map:
-          base_link:
-            camera_left_link:
-              camera_left_color_optical_frame:
-                {}
-              camera_left_depth_optical_frame:
-                {}
-            camera_right_link:
-              camera_right_aligned_depth_to_color_frame:
-                camera_right_color_optical_frame:
-                  {}
-              camera_right_color_frame:
-                {}
-              camera_right_depth_frame:
-                camera_right_depth_optical_frame:
-                  {}
-            velodyne:
-              {}
-            zed2_base_link:
-              zed2_left_camera_optical_frame:
-                {}
-      Update Interval: 0
+      Invert Rainbow: true
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: Heightmap (Global)
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 5
+      Size (m): 0.07999999821186066
+      Style: Spheres
+      Topic: /height_mapping/global/map_cloud
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /height_mapping/global/mapping_region
+      Name: Map region
+      Namespaces:
+        height_map: true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 48; 48; 48
+    Background Color: 0; 0; 0
     Default Light: true
     Fixed Frame: map
     Frame Rate: 30
@@ -203,7 +197,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 17.793184280395508
+      Distance: 72.47679901123047
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -211,17 +205,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
-      Focal Shape Fixed Size: false
+        X: -0.35385769605636597
+        Y: -2.4444758892059326
+        Z: 0.14254245162010193
+      Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3003997802734375
+      Pitch: 0.714796781539917
       Target Frame: base_link
-      Yaw: 3.5885863304138184
+      Yaw: 0.5222235918045044
     Saved: ~
 Window Geometry:
   Displays:

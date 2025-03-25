@@ -10,8 +10,8 @@
 #include "height_mapping_core/height_estimators/MovingAverageEstimator.h"
 
 namespace height_mapping {
-void MovingAverageEstimator::estimate(
-    grid_map::HeightMap &map, const pcl::PointCloud<pcl::PointXYZ> &cloud) {
+void MovingAverageEstimator::estimate(HeightMap &map,
+                                      const pcl::PointCloud<pcl::PointXYZ> &cloud) {
 
   if (hasEmptyCloud(cloud))
     return;
@@ -24,8 +24,8 @@ void MovingAverageEstimator::estimate(
 
   // Prepare matrices
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
   auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
   grid_map::Index measuredIndex;
@@ -38,8 +38,8 @@ void MovingAverageEstimator::estimate(
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
     auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
 
     // Initialize the height and variance if it is NaN
@@ -58,8 +58,8 @@ void MovingAverageEstimator::estimate(
   }
 }
 
-void MovingAverageEstimator::estimate(
-    grid_map::HeightMap &map, const pcl::PointCloud<pcl::PointXYZI> &cloud) {
+void MovingAverageEstimator::estimate(HeightMap &map,
+                                      const pcl::PointCloud<pcl::PointXYZI> &cloud) {
   if (hasEmptyCloud(cloud))
     return;
 
@@ -70,11 +70,11 @@ void MovingAverageEstimator::estimate(
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
 
-  map.addLayer("intensity");
-  auto &intensityMatrix = map["intensity"];
+  map.addLayer(layers::Sensor::Lidar::INTENSITY);
+  auto &intensityMatrix = map[layers::Sensor::Lidar::INTENSITY];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -87,8 +87,8 @@ void MovingAverageEstimator::estimate(
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
     auto &intensity = intensityMatrix(measuredIndex(0), measuredIndex(1));
-    auto &min_height = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &max_height = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &min_height = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &max_height = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
 
     // Initialize the height and variance if it is NaN
     if (map.isEmptyAt(measuredIndex)) {
@@ -103,8 +103,8 @@ void MovingAverageEstimator::estimate(
   }
 }
 
-void MovingAverageEstimator::estimate(
-    grid_map::HeightMap &map, const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
+void MovingAverageEstimator::estimate(HeightMap &map,
+                                      const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
 
   if (hasEmptyCloud(cloud))
     return;
@@ -116,17 +116,17 @@ void MovingAverageEstimator::estimate(
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
 
-  map.addLayer("r");
-  map.addLayer("g");
-  map.addLayer("b");
-  map.addLayer("color");
-  auto &red_matrix = map["r"];
-  auto &green_matrix = map["g"];
-  auto &blue_matrix = map["b"];
-  auto &color_matrix = map["color"];
+  map.addLayer(layers::Sensor::RGBD::R);
+  map.addLayer(layers::Sensor::RGBD::G);
+  map.addLayer(layers::Sensor::RGBD::B);
+  map.addLayer(layers::Sensor::RGBD::COLOR);
+  auto &red_matrix = map[layers::Sensor::RGBD::R];
+  auto &green_matrix = map[layers::Sensor::RGBD::G];
+  auto &blue_matrix = map[layers::Sensor::RGBD::B];
+  auto &color_matrix = map[layers::Sensor::RGBD::COLOR];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -138,8 +138,8 @@ void MovingAverageEstimator::estimate(
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &min_height = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &max_height = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &min_height = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &max_height = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
     auto &red = red_matrix(measuredIndex(0), measuredIndex(1));
     auto &green = green_matrix(measuredIndex(0), measuredIndex(1));
     auto &blue = blue_matrix(measuredIndex(0), measuredIndex(1));

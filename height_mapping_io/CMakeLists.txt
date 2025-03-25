@@ -44,8 +44,8 @@ include_directories(
 link_directories(${PCL_LIBRARY_DIRS})
 
 add_library(${PROJECT_NAME}
-  src/HeightMapReader.cpp
-  src/HeightMapWriter.cpp
+  # src/HeightMapReader.cpp
+  # src/HeightMapWriter.cpp
   src/KITTIScanReader.cpp
   src/KITTIScanWriter.cpp
   src/KITTIMapWriter.cpp

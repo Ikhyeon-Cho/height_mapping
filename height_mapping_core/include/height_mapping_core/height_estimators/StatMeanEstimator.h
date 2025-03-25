@@ -17,12 +17,9 @@ public:
   StatMeanEstimator() = default;
   ~StatMeanEstimator() override = default;
 
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
 private:
   /**
@@ -30,8 +27,7 @@ private:
    * algorithm Reference:
    * https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
    */
-  void updateHeightStats(float &height, float &variance, float n,
-                         float new_height) {
+  void updateHeightStats(float &height, float &variance, float n, float new_height) {
 
     const float delta = (new_height - height);
     const float delta_n = delta / n;
@@ -74,8 +70,8 @@ private:
    * For 95% confidence level with degrees of freedom = n-1
    * Returns the half-width of the confidence interval
    */
-  float getConfidenceInterval(float n, float variance,
-                              float confidence_level = 0.95f) const {
+  float
+  getConfidenceInterval(float n, float variance, float confidence_level = 0.95f) const {
     if (n < 2)
       return std::numeric_limits<float>::infinity();
 

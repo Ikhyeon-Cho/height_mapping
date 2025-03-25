@@ -37,7 +37,7 @@ void DataCollectionNode::getFrameIDs() {
   baselinkFrame_ = nhFrameID_.param<std::string>("base_link", "base_link");
 }
 
-void DataCollectionNode::setNodeTimers() {
+void DataCollectionNode::initializeTimers() {
 
   dataCollectionTimer_ = nh_.createTimer(
       ros::Duration(dataCollectionPeriod_),
@@ -80,7 +80,7 @@ void DataCollectionNode::initialize() {
   heightFilter_ = std::make_shared<height_mapping::FastHeightFilter>(
       minHeightThreshold_, maxHeightThreshold_);
   scanWriter_.setDataPath(dataCollectionPath_ + "/velodyne/");
-  mapWriter_.setDataPath(dataCollectionPath_ + "/heightmap/");
+  // mapWriter_.setDataPath(dataCollectionPath_ + "/heightmap/");
 }
 
 void DataCollectionNode::laserCloudCallback(
@@ -187,9 +187,9 @@ void DataCollectionNode::dataCollectionTimerCallback(
 
   // Save height map
   try {
-    if (!mapWriter_.writeMap(heightMap_)) {
-      std::cout << "\033[1;33m[DataCollectionNode]: Failed to write height "
-                   "map\033[0m\n";
+    // if (!mapWriter_.writeMap(heightMap_)) {
+      // std::cout << "\033[1;33m[DataCollectionNode]: Failed to write height "
+                  //  "map\033[0m\n";
     }
   } catch (const std::exception &e) {
     std::cout << "\033[1;31m[DataCollectionNode]: Error writing height map: "

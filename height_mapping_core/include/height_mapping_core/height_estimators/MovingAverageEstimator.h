@@ -16,10 +16,9 @@ namespace height_mapping {
 class MovingAverageEstimator : public HeightEstimatorBase {
 public:
   struct Parameters {
-    float alpha{0.8f}; // Moving average weight [0, 1]:
-                       // closer to 1 means more weight to new measurement
-    bool adaptive_weight{
-        false}; // Enable adaptive weight based on height difference
+    float alpha{0.8f};           // Moving average weight [0, 1]:
+                                 // closer to 1 means more weight to new measurement
+    bool adaptive_weight{false}; // Enable adaptive weight based on height difference
   };
 
   explicit MovingAverageEstimator() = default;
@@ -27,12 +26,9 @@ public:
 
   void setMovingAverageWeight(float alpha) { params_.alpha = alpha; }
 
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
   static void movingAveageUpdate(float &current, float new_value, float alpha) {
     alpha = clamp(alpha, 0.1f, 0.9f);

@@ -17,12 +17,11 @@ class KalmanEstimator : public HeightEstimatorBase {
 public:
   struct Parameters {
     float baseUncertainty{0.03f}; // Base measurement uncertainty
-    float distanceFactor{
-        0.001f};                 // How much uncertainty increases with distance
-    float angleFactor{0.001f};   // How much uncertainty increases with angle
-    float minVariance{0.001f};   // Minimum allowed variance
-    float maxVariance{1.0f};     // Maximum allowed variance
-    bool adaptiveVariance{true}; // Enable distance/angle-based variance
+    float distanceFactor{0.001f}; // How much uncertainty increases with distance
+    float angleFactor{0.001f};    // How much uncertainty increases with angle
+    float minVariance{0.001f};    // Minimum allowed variance
+    float maxVariance{1.0f};      // Maximum allowed variance
+    bool adaptiveVariance{true};  // Enable distance/angle-based variance
   };
 
   explicit KalmanEstimator() = default;
@@ -30,12 +29,9 @@ public:
 
   void setParameters(const Parameters &params) { params_ = params; }
 
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
-  void estimate(grid_map::HeightMap &map,
-                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZ> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZI> &cloud) override;
+  void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZRGB> &cloud) override;
 
   /**
    * Kalman filter update step
@@ -44,8 +40,8 @@ public:
    * @param pointHeight New height measurement
    * @param pointVariance Measurement uncertainty
    */
-  static void kalmanUpdate(float &height, float &variance, float pointHeight,
-                           float pointVariance) {
+  static void
+  kalmanUpdate(float &height, float &variance, float pointHeight, float pointVariance) {
 
     const float kalmanGain = variance / (variance + pointVariance);
     height = height + kalmanGain * (pointHeight - height);
