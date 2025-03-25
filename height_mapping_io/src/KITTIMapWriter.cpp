@@ -84,7 +84,7 @@ KITTIMapWriter::gridMapToTensor(const grid_map::GridMap &map) const {
   for (grid_map::GridMapIterator it(map); !it.isPastEnd(); ++it) {
     // First check the basic layer (elevation) for invalid mask
     invalidMask[cellIdx] =
-        map.isValid(*it, grid_map::HeightMap::CoreLayers::ELEVATION) ? 0 : 1;
+        map.isValid(*it, height_mapping::layers::Height::ELEVATION) ? 0 : 1;
 
     // Store data for each layer
     for (size_t l = 0; l < numLayers; ++l) {

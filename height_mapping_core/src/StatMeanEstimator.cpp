@@ -14,14 +14,14 @@ StatMeanEstimator tracks:
 - elevation
 - elevation_min
 - elevation_max
-- variance
+- elevation_variance
 - n_measured
 - intensity (if available)
 - color (if available)
 */
 namespace height_mapping {
 
-void StatMeanEstimator::estimate(grid_map::HeightMap &map,
+void StatMeanEstimator::estimate(HeightMap &map,
                                  const pcl::PointCloud<pcl::PointXYZ> &cloud) {
   if (hasEmptyCloud(cloud))
     return;
@@ -33,16 +33,15 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
+  auto &heightVarianceMatrix = map.getHeightVarianceMatrix();
   auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
-  map.addLayer("standard_error");
-  auto &standardErrorMatrix = map["standard_error"];
-
-  map.addLayer("confidence_interval");
-  auto &confidenceIntervalMatrix = map["confidence_interval"];
+  map.addLayer(layers::Confidence::STANDARD_ERROR);
+  map.addLayer(layers::Confidence::CONFIDENCE_INTERVAL);
+  auto &standardErrorMatrix = map[layers::Confidence::STANDARD_ERROR];
+  auto &confidenceIntervalMatrix = map[layers::Confidence::CONFIDENCE_INTERVAL];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -54,12 +53,11 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = heightVarianceMatrix(measuredIndex(0), measuredIndex(1));
     auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
-    auto &standardError =
-        standardErrorMatrix(measuredIndex(0), measuredIndex(1));
+    auto &standardError = standardErrorMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidenceInterval =
         confidenceIntervalMatrix(measuredIndex(0), measuredIndex(1));
 
@@ -88,7 +86,7 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
   }
 }
 
-void StatMeanEstimator::estimate(grid_map::HeightMap &map,
+void StatMeanEstimator::estimate(HeightMap &map,
                                  const pcl::PointCloud<pcl::PointXYZI> &cloud) {
   if (hasEmptyCloud(cloud))
     return;
@@ -100,21 +98,17 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
+  auto &heightVarianceMatrix = map.getHeightVarianceMatrix();
+  auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
-  map.addLayer("n_measured", 0.0);
-  auto &numMeasuredMatrix = map["n_measured"];
-
-  map.addLayer("intensity");
-  auto &intensityMatrix = map["intensity"];
-
-  map.addLayer("standard_error");
-  auto &standardErrorMatrix = map["standard_error"];
-
-  map.addLayer("confidence_interval");
-  auto &confidenceIntervalMatrix = map["confidence_interval"];
+  map.addLayer(layers::Sensor::Lidar::INTENSITY);
+  auto &intensityMatrix = map[layers::Sensor::Lidar::INTENSITY];
+  map.addLayer(layers::Confidence::STANDARD_ERROR);
+  auto &standardErrorMatrix = map[layers::Confidence::STANDARD_ERROR];
+  map.addLayer(layers::Confidence::CONFIDENCE_INTERVAL);
+  auto &confidenceIntervalMatrix = map[layers::Confidence::CONFIDENCE_INTERVAL];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -126,13 +120,12 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = heightVarianceMatrix(measuredIndex(0), measuredIndex(1));
     auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
     auto &intensity = intensityMatrix(measuredIndex(0), measuredIndex(1));
-    auto &standardError =
-        standardErrorMatrix(measuredIndex(0), measuredIndex(1));
+    auto &standardError = standardErrorMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidenceInterval =
         confidenceIntervalMatrix(measuredIndex(0), measuredIndex(1));
 
@@ -165,8 +158,8 @@ void StatMeanEstimator::estimate(grid_map::HeightMap &map,
   }
 }
 
-void StatMeanEstimator::estimate(
-    grid_map::HeightMap &map, const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
+void StatMeanEstimator::estimate(HeightMap &map,
+                                 const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
   if (hasEmptyCloud(cloud))
     return;
 
@@ -177,27 +170,24 @@ void StatMeanEstimator::estimate(
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
+  auto &heightVarianceMatrix = map.getHeightVarianceMatrix();
+  auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
-  map.addLayer("n_measured", 0.0);
-  auto &numMeasuredMatrix = map["n_measured"];
+  map.addLayer(layers::Confidence::STANDARD_ERROR);
+  map.addLayer(layers::Confidence::CONFIDENCE_INTERVAL);
+  auto &standardErrorMatrix = map[layers::Confidence::STANDARD_ERROR];
+  auto &confidenceIntervalMatrix = map[layers::Confidence::CONFIDENCE_INTERVAL];
 
-  map.addLayer("standard_error");
-  auto &standardErrorMatrix = map["standard_error"];
-
-  map.addLayer("confidence_interval");
-  auto &confidenceIntervalMatrix = map["confidence_interval"];
-
-  map.addLayer("r");
-  map.addLayer("g");
-  map.addLayer("b");
-  map.addLayer("color");
-  auto &r_matrix = map["r"];
-  auto &g_matrix = map["g"];
-  auto &b_matrix = map["b"];
-  auto &color_matrix = map["color"];
+  map.addLayer(layers::Sensor::RGBD::R);
+  map.addLayer(layers::Sensor::RGBD::G);
+  map.addLayer(layers::Sensor::RGBD::B);
+  map.addLayer(layers::Sensor::RGBD::COLOR);
+  auto &r_matrix = map[layers::Sensor::RGBD::R];
+  auto &g_matrix = map[layers::Sensor::RGBD::G];
+  auto &b_matrix = map[layers::Sensor::RGBD::B];
+  auto &color_matrix = map[layers::Sensor::RGBD::COLOR];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -209,12 +199,11 @@ void StatMeanEstimator::estimate(
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = heightVarianceMatrix(measuredIndex(0), measuredIndex(1));
     auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
-    auto &standardError =
-        standardErrorMatrix(measuredIndex(0), measuredIndex(1));
+    auto &standardError = standardErrorMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidenceInterval =
         confidenceIntervalMatrix(measuredIndex(0), measuredIndex(1));
 

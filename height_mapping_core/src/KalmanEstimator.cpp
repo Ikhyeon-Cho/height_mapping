@@ -11,7 +11,7 @@
 
 namespace height_mapping {
 
-void KalmanEstimator::estimate(grid_map::HeightMap &map,
+void KalmanEstimator::estimate(HeightMap &map,
                                const pcl::PointCloud<pcl::PointXYZ> &cloud) {
 
   if (hasEmptyCloud(cloud))
@@ -24,13 +24,13 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
+  auto &heightVarianceMatrix = map.getHeightVarianceMatrix();
   auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
-  map.addLayer("confidence", 0.0f);
-  auto &confidenceMatrix = map["confidence"];
+  map.addLayer(layers::Confidence::CONFIDENCE, 0.0f);
+  auto &confidenceMatrix = map[layers::Confidence::CONFIDENCE];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -41,9 +41,9 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = heightVarianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
     auto &nPoints = numMeasuredMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
 
@@ -68,7 +68,7 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   }
 }
 
-void KalmanEstimator::estimate(grid_map::HeightMap &map,
+void KalmanEstimator::estimate(HeightMap &map,
                                const pcl::PointCloud<pcl::PointXYZI> &cloud) {
 
   if (hasEmptyCloud(cloud))
@@ -81,14 +81,14 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &heightVarianceMatrix = map.getHeightVarianceMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
 
-  map.addLayer("confidence", 0.0f);
-  map.addLayer("intensity");
-  auto &confidenceMatrix = map["confidence"];
-  auto &intensityMatrix = map["intensity"];
+  map.addLayer(layers::Confidence::CONFIDENCE, 0.0f);
+  map.addLayer(layers::Sensor::Lidar::INTENSITY);
+  auto &confidenceMatrix = map[layers::Confidence::CONFIDENCE];
+  auto &intensityMatrix = map[layers::Sensor::Lidar::INTENSITY];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -99,9 +99,9 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = heightVarianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
     auto &intensity = intensityMatrix(measuredIndex(0), measuredIndex(1));
 
@@ -125,7 +125,7 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   }
 }
 
-void KalmanEstimator::estimate(grid_map::HeightMap &map,
+void KalmanEstimator::estimate(HeightMap &map,
                                const pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
 
   if (hasEmptyCloud(cloud))
@@ -138,20 +138,20 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
   }
 
   auto &heightMatrix = map.getHeightMatrix();
-  auto &varianceMatrix = map.getVarianceMatrix();
-  auto &minHeightMatrix = map.getMinHeightMatrix();
-  auto &maxHeightMatrix = map.getMaxHeightMatrix();
+  auto &heightVarianceMatrix = map.getHeightVarianceMatrix();
+  auto &heightMinMatrix = map.getHeightMinMatrix();
+  auto &heightMaxMatrix = map.getHeightMaxMatrix();
 
-  map.addLayer("confidence", 0.0f);
-  map.addLayer("r");
-  map.addLayer("g");
-  map.addLayer("b");
-  map.addLayer("color");
-  auto &confidenceMatrix = map["confidence"];
-  auto &redMatrix = map["r"];
-  auto &greenMatrix = map["g"];
-  auto &blueMatrix = map["b"];
-  auto &colorMatrix = map["color"];
+  map.addLayer(layers::Confidence::CONFIDENCE, 0.0f);
+  map.addLayer(layers::Sensor::RGBD::R);
+  map.addLayer(layers::Sensor::RGBD::G);
+  map.addLayer(layers::Sensor::RGBD::B);
+  map.addLayer(layers::Sensor::RGBD::COLOR);
+  auto &confidenceMatrix = map[layers::Confidence::CONFIDENCE];
+  auto &redMatrix = map[layers::Sensor::RGBD::R];
+  auto &greenMatrix = map[layers::Sensor::RGBD::G];
+  auto &blueMatrix = map[layers::Sensor::RGBD::B];
+  auto &colorMatrix = map[layers::Sensor::RGBD::COLOR];
 
   grid_map::Index measuredIndex;
   grid_map::Position measuredPosition;
@@ -162,9 +162,9 @@ void KalmanEstimator::estimate(grid_map::HeightMap &map,
       continue;
 
     auto &height = heightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &variance = varianceMatrix(measuredIndex(0), measuredIndex(1));
-    auto &minHeight = minHeightMatrix(measuredIndex(0), measuredIndex(1));
-    auto &maxHeight = maxHeightMatrix(measuredIndex(0), measuredIndex(1));
+    auto &variance = heightVarianceMatrix(measuredIndex(0), measuredIndex(1));
+    auto &minHeight = heightMinMatrix(measuredIndex(0), measuredIndex(1));
+    auto &maxHeight = heightMaxMatrix(measuredIndex(0), measuredIndex(1));
     auto &confidence = confidenceMatrix(measuredIndex(0), measuredIndex(1));
     auto &red = redMatrix(measuredIndex(0), measuredIndex(1));
     auto &green = greenMatrix(measuredIndex(0), measuredIndex(1));

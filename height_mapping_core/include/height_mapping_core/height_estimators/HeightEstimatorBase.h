@@ -21,11 +21,9 @@ public:
 
   virtual ~HeightEstimatorBase() = default;
 
-  virtual void estimate(grid_map::HeightMap &map,
-                        const pcl::PointCloud<pcl::PointXYZ> &cloud) = 0;
-  virtual void estimate(grid_map::HeightMap &map,
-                        const pcl::PointCloud<pcl::PointXYZI> &cloud) = 0;
-  virtual void estimate(grid_map::HeightMap &map,
+  virtual void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZ> &cloud) = 0;
+  virtual void estimate(HeightMap &map, const pcl::PointCloud<pcl::PointXYZI> &cloud) = 0;
+  virtual void estimate(HeightMap &map,
                         const pcl::PointCloud<pcl::PointXYZRGB> &cloud) = 0;
 };
 } // namespace height_mapping

@@ -20,22 +20,22 @@ public:
   HeightMapRaycaster() = default;
 
   template <typename PointT>
-  void correctHeight(grid_map::HeightMap &map,
+  void correctHeight(HeightMap &map,
                      const pcl::PointCloud<PointT> &cloud,
                      const Eigen::Vector3f &sensorOrigin) {
 
     auto &heightMatrix = map.getHeightMatrix();
-    auto &maxHeightMatrix = map.getMaxHeightMatrix();
-    auto &varianceMatrix = map.getVarianceMatrix();
+    auto &maxHeightMatrix = map.getHeightMaxMatrix();
+    auto &varianceMatrix = map.getHeightVarianceMatrix();
     auto &numMeasuredMatrix = map.getMeasurementCountMatrix();
 
-    map.addLayer("raycasting");
-    map.clear("raycasting");
-    auto &raycastingMatrix = map.get("raycasting");
+    map.addLayer(layers::Scan::RAY_CASTING);
+    map.clear(layers::Scan::RAY_CASTING);
+    auto &raycastingMatrix = map.get(layers::Scan::RAY_CASTING);
 
-    map.addLayer("scan_height");
-    map.clear("scan_height");
-    auto &scanHeightMatrix = map.get("scan_height");
+    map.addLayer(layers::Scan::SCAN_HEIGHT);
+    map.clear(layers::Scan::SCAN_HEIGHT);
+    auto &scanHeightMatrix = map.get(layers::Scan::SCAN_HEIGHT);
 
     const float sensorHeight = sensorOrigin.z();
 
@@ -79,9 +79,6 @@ public:
         if (std::isfinite(scanHeight) && scanHeight > pointOnRay.z() + 0.1)
           break;
 
-        // if (isStaticAt(map, checkIndex))
-        //   continue;
-
         // Get map height and variance at the ray point
         auto &mapHeight = heightMatrix(checkIndex(0), checkIndex(1));
         auto &mapMaxHeight = maxHeightMatrix(checkIndex(0), checkIndex(1));
@@ -97,11 +94,9 @@ public:
 
         // Update height if current height is higher than the ray point
         if (mapHeight > pointOnRay.z() + correctionThreshold_) {
-          mapHeightVariance +=
-              (mapHeight - pointOnRay.z()); // Increase variance
-          nPoints = 1;                      // Reset nPoints
-          mapHeight =
-              pointOnRay.z() + correctionThreshold_; // Height correction
+          mapHeightVariance += (mapHeight - pointOnRay.z()); // Increase variance
+          nPoints = 1;                                       // Reset nPoints
+          mapHeight = pointOnRay.z() + correctionThreshold_; // Height correction
           // mapMaxHeight =
           //     pointOnRay.z() + correctionThreshold_; // Update max height
         }
@@ -109,12 +104,8 @@ public:
     }
   }
 
-  // Avoid raycasting on static terrain
-  bool isStaticAt(const grid_map::HeightMap &map, const grid_map::Index &index);
-
 private:
   float correctionThreshold_{0.02f};
-  float heightDiffThreshold_{0.55f};
 };
 
 } // namespace height_mapping

@@ -14,11 +14,11 @@ This is a research code, expect that it changes often and any fitness for a part
 - **Range sensors** (e.g. structured light (Kinect, RealSense), LiDAR, stereo camera) 
 - **3D pose estimator** (e.g. with 3D Visual / LiDAR Odometry or SLAM system). 
 <p align='center'>
-    <img src="figures/height_map.jpg" width="800"/>
+    <img src="assets/height_map.jpg" width="800"/>
 </p>
 <p align='center'>
-    <img src="figures/height_mapping.gif" width="400" height="223"/>
-    <img src="figures/height_mapping.png" width="400" height="225"/>
+    <img src="assets/height_mapping.gif" width="400" height="223"/>
+    <img src="assets/height_mapping.png" width="400" height="225"/>
 </p>
 
 
