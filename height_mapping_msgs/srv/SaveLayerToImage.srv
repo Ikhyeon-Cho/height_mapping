@@ -1,9 +1,0 @@
-# SaveLayerToImage.srv
-
-# Request
-string map_name
-string layer_name
----
-# Response
-bool success
-string img_name
