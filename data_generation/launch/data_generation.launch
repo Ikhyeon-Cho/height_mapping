@@ -1,0 +1,12 @@
+<launch>
+
+  <!-- Data generation node -->
+  <node pkg="data_generation" type="data_generation_node" name="data_generation" output="screen">
+    <rosparam command="load" subst_value="true" file="$(find data_generation)/config/data_generation_node.yaml" />
+  </node>
+
+  <!-- Rviz -->
+  <node pkg="rviz" type="rviz" name="$(anon rviz)" output='log'
+    args="-d $(find data_generation)/launch/rviz/data_generation.rviz" />
+
+</launch>

@@ -1,0 +1,19 @@
+node:
+  input_scan_topic: "/velodyne/points"
+  reference_map_path: "$(find data_generation)/../test2.bag"
+  data_collection_period: 1.0
+  dataset:
+    output_path: "/home/ikhyeon/Downloads/DreamGround_dataset"
+    scan_range: 7.5
+    height_map_size_x: 15.0
+    height_map_size_y: 15.0
+
+frame_id:
+  robot: "base_link"
+  map: &map_frame "map" 
+
+height_mapper:
+  estimator_type: "StatMean"
+  frame_id: *map_frame
+  min_height_threshold: -0.2
+  max_height_threshold: 1.5
