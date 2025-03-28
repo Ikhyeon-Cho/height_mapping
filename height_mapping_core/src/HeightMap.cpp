@@ -24,6 +24,31 @@ HeightMap::HeightMap() {
                   layers::Height::ELEVATION_MAX});
 }
 
+HeightMap::HeightMap(const grid_map::GridMap &other) : grid_map::GridMap(other) {
+  // Add core layers if they don't exist in the source map
+  if (!exists(layers::Height::ELEVATION))
+    add(layers::Height::ELEVATION);
+  if (!exists(layers::Height::ELEVATION_MIN))
+    add(layers::Height::ELEVATION_MIN);
+  if (!exists(layers::Height::ELEVATION_MAX))
+    add(layers::Height::ELEVATION_MAX);
+  if (!exists(layers::Height::ELEVATION_VARIANCE))
+    add(layers::Height::ELEVATION_VARIANCE);
+  if (!exists(layers::Height::N_MEASUREMENTS))
+    add(layers::Height::N_MEASUREMENTS, 0.0f);
+
+  // Set frame ID if not already set
+  if (getFrameId().empty())
+    setFrameId("map");
+
+  // Set basic layers
+  if (getBasicLayers().empty()) {
+    setBasicLayers({layers::Height::ELEVATION,
+                    layers::Height::ELEVATION_MIN,
+                    layers::Height::ELEVATION_MAX});
+  }
+}
+
 void HeightMap::addLayer(const std::string &layer, float default_val) {
   if (!exists(layer))
     add(layer, default_val);

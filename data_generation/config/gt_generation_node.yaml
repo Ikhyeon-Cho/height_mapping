@@ -1,0 +1,17 @@
+node:
+  input_scan_topic: "/velodyne/points"
+  reference_map_path: "$(find data_generation)/../parking_lot.bag"
+  preprocessing:
+    scan_z_min: -0.5           # [meter]
+    scan_z_max: 2.0            # [meter]
+  dataset:
+    collection_period: 1.0     # [Hz]
+    scan_range_max: 10.0       # [meter], 15 for map size 20x20
+    map_size_x: 15.0           # [meter]
+    map_size_y: 15.0           # [meter]
+    output_path: "/home/ikhyeon/Downloads/DreamGround_dataset/"
+  debug_mode: true
+
+frame_id:
+  robot: "base_link"
+  map: &map_frame "map"

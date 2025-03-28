@@ -2,5 +2,5 @@
 data/**
 maps/
 
-*.bag
 *.pcd
+*.bag

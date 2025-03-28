@@ -18,7 +18,10 @@ namespace height_mapping {
 
 class HeightMap : public grid_map::GridMap {
 public:
+  using Ptr = std::shared_ptr<HeightMap>;
+
   HeightMap();
+  HeightMap(const grid_map::GridMap &other);
 
   // Layer management
   void addLayer(const std::string &layer, float default_value = NAN);
