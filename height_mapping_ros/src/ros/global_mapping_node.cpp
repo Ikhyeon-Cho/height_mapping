@@ -15,6 +15,7 @@
 #include <grid_map_ros/GridMapRosConverter.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/package.h>
+#include <rosbag/bag.h>
 
 namespace {
 std::string determineSaveDirectory(const std::string &requested_directory);
@@ -54,6 +55,7 @@ void GlobalMappingNode::loadConfig(const ros::NodeHandle &nh) {
   cfg.map_publish_rate = nh.param<double>("map_publish_rate", 10.0);
   cfg.remove_backward_points = nh.param<bool>("remove_backward_points", false);
   cfg.debug_mode = nh.param<bool>("debug_mode", false);
+  cfg.map_save_format = nh.param<std::string>("map_save_format", "bag");
 }
 
 void GlobalMappingNode::initializeTimers() {
@@ -98,9 +100,8 @@ void GlobalMappingNode::lidarScanCallback(const sensor_msgs::PointCloud2Ptr &msg
     lidarscan_received_ = true;
     frame_id_.sensor = msg->header.frame_id;
     map_publish_timer_.start();
-    std::cout
-        << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: Pointcloud Received! "
-        << "Use LiDAR scans for global mapping... \033[0m\n";
+    std::cout << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: "
+                 "Pointcloud Received! Use LiDAR scans for global mapping... \033[0m\n";
   }
 
   // 1. Get transform matrix using tf tree
@@ -136,9 +137,8 @@ void GlobalMappingNode::rgbdScanCallback(const sensor_msgs::PointCloud2Ptr &msg)
     rgbdscan_received_ = true;
     frame_id_.sensor = msg->header.frame_id;
     map_publish_timer_.start();
-    std::cout
-        << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: Colored cloud received! "
-        << "Start global mapping... \033[0m\n";
+    std::cout << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: "
+                 "Colored cloud received! Start global mapping... \033[0m\n";
   }
 
   // 1. Get transform matrix using tf tree
@@ -365,23 +365,49 @@ void GlobalMappingNode::toMapRegion(const height_mapping::HeightMap &map,
 bool GlobalMappingNode::saveMap(height_mapping::save_map::Request &req,
                                 height_mapping::save_map::Response &res) {
 
-  std::cout
-      << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: Saving map...\033[0m\n";
+  std::cout << "\033[1;33m[height_mapping_ros::GlobalMappingNode]: "
+               "Saving map as "
+            << cfg.map_save_format << " file...\033[0m\n";
 
-  std::string directory = determineSaveDirectory(req.directory);
-  std::string filename = createFilename(directory, req.filename);
-
-  pcl::PointCloud<height_mapping_types::ElevationPoint> cloud;
-  auto &map = mapper_->getHeightMap();
-  auto &indices = mapper_->getMeasuredGridIndices();
-  if (!toPclCloud(map, indices, cloud)) {
-    res.success = false;
+  if (mapper_->getMeasuredGridIndices().empty()) {
+    std::cerr << "\033[31m[height_mapping_ros::GlobalMappingNode]: "
+                 "Height map is empty. Failed to save map.\033[0m\n";
     return false;
   }
 
-  bool success = savePointCloud(cloud, filename);
-  res.success = success;
-  return success;
+  std::string directory = determineSaveDirectory(req.directory);
+  std::string filename = createFilename(directory, req.filename);
+  const auto &format = cfg.map_save_format;
+  auto &map = mapper_->getHeightMap();
+
+  // Check map save format
+  if (format == "pcd") {
+    pcl::PointCloud<height_mapping_types::ElevationPoint> cloud;
+    auto &indices = mapper_->getMeasuredGridIndices();
+    if (!toPclCloud(map, indices, cloud)) {
+      res.success = false;
+      return false;
+    }
+
+    bool success = savePointCloud(cloud, filename);
+    res.success = success;
+    return success;
+  }
+
+  else if (format == "bag") {
+    bool success = saveMapToBag(map, filename);
+    res.success = success;
+    return success;
+  }
+
+  else {
+    std::cerr << "\033[31m[height_mapping_ros::GlobalMappingNode]: "
+                 "Invalid map save format: "
+              << format << "\033[0m\n";
+    res.success = false;
+    return false;
+  }
+  return true;
 }
 
 bool GlobalMappingNode::toPclCloud(
@@ -427,16 +453,18 @@ bool GlobalMappingNode::toPclCloud(
 bool GlobalMappingNode::savePointCloud(
     const pcl::PointCloud<height_mapping_types::ElevationPoint> &cloud,
     const std::string &filename) {
-  if (pcl::io::savePCDFileASCII(filename, cloud) == -1) {
-    std::cerr << "\033[33m[height_mapping_ros::GlobalMappingNode]: Failed to save "
-                 "elevation cloud to "
-              << filename << "\033[0m\n";
+
+  std::string pcd_path = filename + ".pcd";
+  if (pcl::io::savePCDFileASCII(pcd_path, cloud) == -1) {
+    std::cerr << "\033[33m[height_mapping_ros::GlobalMappingNode]: "
+                 "Failed to save elevation cloud to "
+              << pcd_path << "\033[0m\n";
     return false;
   }
 
-  std::cout
-      << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: elevation cloud saved to "
-      << filename << "\033[0m\n";
+  std::cout << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: "
+               "elevation cloud saved to "
+            << pcd_path << "\033[0m\n";
   return true;
 }
 
@@ -444,6 +472,32 @@ bool GlobalMappingNode::clearMap(std_srvs::Empty::Request &req,
                                  std_srvs::Empty::Response &res) {
   mapper_->clearMap();
   return true;
+}
+
+bool GlobalMappingNode::saveMapToBag(const HeightMap &map, const std::string &filename) {
+  try {
+    rosbag::Bag bag;
+    std::string bag_path = filename + ".bag";
+    bag.open(bag_path, rosbag::bagmode::Write);
+
+    // Convert height map to ROS message
+    grid_map_msgs::GridMap msg;
+    grid_map::GridMapRosConverter::toMessage(map, msg);
+
+    auto topic_name = "/height_map_global";
+    bag.write(topic_name, ros::Time::now(), msg);
+    bag.close();
+
+    std::cout << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: "
+                 "Saved to "
+              << bag_path << "\033[0m\n";
+    return true;
+  } catch (const std::exception &e) {
+    std::cerr << "\033[33m[height_mapping_ros::GlobalMappingNode]: "
+                 "Failed to save height map to bag file: "
+              << e.what() << "\033[0m\n";
+    return false;
+  }
 }
 
 } // namespace height_mapping_ros
@@ -475,20 +529,16 @@ std::string determineSaveDirectory(const std::string &requested_directory) {
 
 std::string createFilename(const std::string &directory,
                            const std::string &requested_filename) {
+
   if (requested_filename.empty()) {
     auto now = std::chrono::system_clock::now();
     auto now_c = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d-%H-%M-%S");
-    return directory + "elevation_" + ss.str() + ".pcd";
+    std::stringstream localtime;
+    localtime << std::put_time(std::localtime(&now_c), "%Y-%m-%d-%H-%M-%S");
+    return directory + "elevation_" + localtime.str();
   }
 
-  std::string filename = directory + requested_filename;
-  if (filename.length() < 4 || filename.substr(filename.length() - 4) != ".pcd") {
-    filename += ".pcd";
-  }
-
-  return filename;
+  return directory + requested_filename;
 }
 } // namespace
 

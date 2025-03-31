@@ -11,7 +11,6 @@
 #include <std_srvs/Empty.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/Marker.h>
-// #include <height_mapping_io/height_mapping_io.h>
 
 #include "common/ros/common.h"
 #include "height_mapping/core/core.h"
@@ -29,6 +28,7 @@ public:
     bool remove_backward_points;
     bool debug_mode;
     std::string map_save_dir;
+    std::string map_save_format;
   } cfg;
 
   GlobalMappingNode();
@@ -67,6 +67,7 @@ private:
                   pcl::PointCloud<height_mapping_types::ElevationPoint> &cloud);
   bool savePointCloud(const pcl::PointCloud<height_mapping_types::ElevationPoint> &cloud,
                       const std::string &filename);
+  bool saveMapToBag(const HeightMap &map, const std::string &filename);
   void toPointCloud2(const HeightMap &map,
                      const std::vector<std::string> &layers,
                      const std::unordered_set<grid_map::Index> &grid_indices,
