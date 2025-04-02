@@ -38,7 +38,8 @@ GlobalMappingNode::GlobalMappingNode() : nh_("~") {
   initializePubSubs();
   initializeServices();
 
-  frame_id_ = FrameID::loadFromConfig(cfg_frame_id);
+  // TF frame IDs
+  frame_ids::loadFromConfig(cfg_frame_id);
 
   // Global Mapper
   mapper_ = std::make_unique<height_mapping::GlobalMapper>(
@@ -97,30 +98,30 @@ void GlobalMappingNode::initializeServices() {
 void GlobalMappingNode::lidarScanCallback(const sensor_msgs::PointCloud2Ptr &msg) {
 
   if (!lidarscan_received_) {
+    frame_ids::sensor::LIDAR = msg->header.frame_id;
     lidarscan_received_ = true;
-    frame_id_.sensor = msg->header.frame_id;
     map_publish_timer_.start();
     std::cout << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: "
                  "Pointcloud Received! Use LiDAR scans for global mapping... \033[0m\n";
   }
 
   // 1. Get transform matrix using tf tree
-  geometry_msgs::TransformStamped sensor2base, base2map;
-  if (!tf_.lookupTransform(frame_id_.robot, frame_id_.sensor, sensor2base) ||
-      !tf_.lookupTransform(frame_id_.map, frame_id_.robot, base2map))
+  geometry_msgs::TransformStamped lidar2base, base2map;
+  if (!tf_.lookupTransform(frame_ids::ROBOT_BASE, frame_ids::sensor::LIDAR, lidar2base) ||
+      !tf_.lookupTransform(frame_ids::MAP, frame_ids::ROBOT_BASE, base2map))
     return;
 
   // 2. Convert ROS msg to PCL data
   auto scan_raw = boost::make_shared<pcl::PointCloud<Laser>>();
   pcl::moveFromROSMsg(*msg, *scan_raw);
 
-  auto scan_processed = processLidarScan(scan_raw, sensor2base, base2map);
+  auto scan_processed = processLidarScan(scan_raw, lidar2base, base2map);
   if (!scan_processed)
     return;
 
   auto scan_rasterized = mapper_->heightMapping(scan_processed);
 
-  auto sensor2map = tf_.multiplyTransforms(sensor2base, base2map);
+  auto sensor2map = tf_.multiplyTransforms(lidar2base, base2map);
   Eigen::Vector3f sensorOrigin3D(sensor2map.transform.translation.x,
                                  sensor2map.transform.translation.y,
                                  sensor2map.transform.translation.z);
@@ -135,29 +136,29 @@ void GlobalMappingNode::rgbdScanCallback(const sensor_msgs::PointCloud2Ptr &msg)
 
   if (!rgbdscan_received_) {
     rgbdscan_received_ = true;
-    frame_id_.sensor = msg->header.frame_id;
+    frame_ids::sensor::RGBD = msg->header.frame_id;
     map_publish_timer_.start();
     std::cout << "\033[1;32m[height_mapping_ros::GlobalMappingNode]: "
                  "Colored cloud received! Start global mapping... \033[0m\n";
   }
 
   // 1. Get transform matrix using tf tree
-  geometry_msgs::TransformStamped sensor2base, base2map;
-  if (!tf_.lookupTransform(frame_id_.robot, frame_id_.sensor, sensor2base) ||
-      !tf_.lookupTransform(frame_id_.map, frame_id_.robot, base2map))
+  geometry_msgs::TransformStamped camera2base, base2map;
+  if (!tf_.lookupTransform(frame_ids::ROBOT_BASE, frame_ids::sensor::RGBD, camera2base) ||
+      !tf_.lookupTransform(frame_ids::MAP, frame_ids::ROBOT_BASE, base2map))
     return;
 
   // 2. Convert ROS msg to PCL data
   auto scan_raw = boost::make_shared<pcl::PointCloud<Color>>();
   pcl::moveFromROSMsg(*msg, *scan_raw);
 
-  auto scan_processed = processRGBDScan(scan_raw, sensor2base, base2map);
+  auto scan_processed = processRGBDScan(scan_raw, camera2base, base2map);
   if (!scan_processed)
     return;
 
   auto scan_rasterized = mapper_->heightMapping(scan_processed);
 
-  auto sensor2map = tf_.multiplyTransforms(sensor2base, base2map);
+  auto sensor2map = tf_.multiplyTransforms(camera2base, base2map);
   Eigen::Vector3f sensorOrigin3D(sensor2map.transform.translation.x,
                                  sensor2map.transform.translation.y,
                                  sensor2map.transform.translation.z);

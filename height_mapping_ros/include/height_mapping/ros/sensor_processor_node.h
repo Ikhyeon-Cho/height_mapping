@@ -44,15 +44,18 @@ private:
                      const sensor_msgs::PointCloud2ConstPtr &msg3);
 
   void transformToBaselink(const pcl::PointCloud<Color>::Ptr &cloud,
-                           pcl::PointCloud<Color>::Ptr &transformedCloud, const std::string &sensorFrame);
+                           pcl::PointCloud<Color>::Ptr &transformedCloud,
+                           const std::string &sensorFrame);
 
   ros::NodeHandle nh_;
 
   // Message filters types
   typedef message_filters::Subscriber<sensor_msgs::PointCloud2> CloudSubscriber;
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2>
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2,
+                                                          sensor_msgs::PointCloud2>
       SyncPolicy2;
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2,
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2,
+                                                          sensor_msgs::PointCloud2,
                                                           sensor_msgs::PointCloud2>
       SyncPolicy3;
   typedef message_filters::Synchronizer<SyncPolicy2> Synchronizer2;
@@ -68,7 +71,6 @@ private:
 
   // Core implementation
   TransformOps tf_;
-  FrameID frame_id_;
 
   // pcl pointers
   pcl::PointCloud<Color>::Ptr cloud1_{new pcl::PointCloud<Color>};

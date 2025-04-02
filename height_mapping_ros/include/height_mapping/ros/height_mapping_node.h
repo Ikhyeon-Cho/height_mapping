@@ -72,7 +72,6 @@ private:
   // Core objects
   std::unique_ptr<height_mapping::HeightMapper> mapper_;
   TransformOps tf_;
-  FrameID frame_id_;
 
   // State variables
   bool lidarscan_received_{false};

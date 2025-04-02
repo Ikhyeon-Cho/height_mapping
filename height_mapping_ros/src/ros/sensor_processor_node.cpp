@@ -24,7 +24,8 @@ SensorProcessorNode::SensorProcessorNode() : nh_("~") {
   SensorProcessorNode::loadConfig(cfg_node);
   initializePubSubs();
 
-  frame_id_ = FrameID::loadFromConfig(cfg_frame_id);
+  // TF frame IDs
+  frame_ids::loadFromConfig(cfg_frame_id);
 
   std::cout << "\033[1;32m[height_mapping_ros::SensorProcessorNode]: "
                "Sensor processor node initialized. Waiting for "
@@ -37,8 +38,7 @@ void SensorProcessorNode::loadConfig(const ros::NodeHandle &nh) {
       "input_cloud_topics",
       {"/sensor1/points", "/sensor2/points", "/sensor3/points"});
   cfg.outputcloud_topic =
-      nh.param<std::string>("outputcloud_topic",
-                            "/sensor_processor/points");
+      nh.param<std::string>("outputcloud_topic", "/sensor_processor/points");
   cfg.cloud_publish_rate = nh.param<double>("cloud_publish_rate", 10.0);      // [Hz]
   cfg.downsample_resolution = nh.param<double>("downsample_resolution", 0.1); // [m/grid]
   cfg.min_range_threshold = nh.param<double>("min_range_threshold", 0.3);     // [m]
@@ -114,7 +114,7 @@ void SensorProcessorNode::syncCallback2(const sensor_msgs::PointCloud2ConstPtr &
   // Convert back to ROS message
   sensor_msgs::PointCloud2 msg;
   pcl::toROSMsg(*filtered1_, msg);
-  msg.header.frame_id = frame_id_.robot;
+  msg.header.frame_id = frame_ids::ROBOT_BASE;
   msg.header.stamp = msg1->header.stamp; // Use timestamp from first message
   pub_cloud_processed_.publish(msg);
 
@@ -178,7 +178,7 @@ void SensorProcessorNode::syncCallback3(const sensor_msgs::PointCloud2ConstPtr &
   // Convert back to ROS message
   sensor_msgs::PointCloud2 msg;
   pcl::toROSMsg(*filtered1_, msg);
-  msg.header.frame_id = frame_id_.robot;
+  msg.header.frame_id = frame_ids::ROBOT_BASE;
   msg.header.stamp = msg1->header.stamp;
   pub_cloud_processed_.publish(msg);
 
@@ -195,7 +195,7 @@ void SensorProcessorNode::transformToBaselink(
 
   // Get transform matrix
   geometry_msgs::TransformStamped transform;
-  if (!tf_.lookupTransform(frame_id_.robot, sensor_frame, transform))
+  if (!tf_.lookupTransform(frame_ids::ROBOT_BASE, sensor_frame, transform))
     return;
 
   // Transform point cloud

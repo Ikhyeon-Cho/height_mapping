@@ -1,3 +1,6 @@
 .vscode/**
 data/**
 maps/
+
+*.bag
+*.pcd

@@ -28,7 +28,8 @@ HeightMappingNode::HeightMappingNode() : nh_("~") {
   initializeTimers();
   initializeServices();
 
-  frame_id_ = FrameID::loadFromConfig(cfg_frame_id);
+  // TF frame IDs
+  frame_ids::loadFromConfig(cfg_frame_id);
 
   // Height Mapper
   mapper_ = std::make_unique<height_mapping::HeightMapper>(
@@ -60,8 +61,7 @@ void HeightMappingNode::initializePubSubs() {
   pub_rgbdscan_rasterized_ = nh_.advertise<sensor_msgs::PointCloud2>(
       "/height_mapping/local/scan_rasterized_rgbd",
       1);
-  pub_heightmap_ =
-      nh_.advertise<grid_map_msgs::GridMap>("/height_mapping/local/map", 1);
+  pub_heightmap_ = nh_.advertise<grid_map_msgs::GridMap>("/height_mapping/local/map", 1);
 
   if (cfg.debug_mode) {
     pub_debug_lidar_ =
@@ -101,8 +101,8 @@ void HeightMappingNode::initializeServices() {
 void HeightMappingNode::lidarScanCallback(const sensor_msgs::PointCloud2Ptr &msg) {
 
   if (!lidarscan_received_) {
+    frame_ids::sensor::LIDAR = msg->header.frame_id;
     lidarscan_received_ = true;
-    frame_id_.sensor = msg->header.frame_id;
     pose_update_timer_.start();
     map_publish_timer_.start();
     std::cout
@@ -111,9 +111,9 @@ void HeightMappingNode::lidarScanCallback(const sensor_msgs::PointCloud2Ptr &msg
   }
 
   // 1. Get transform matrix using tf tree
-  geometry_msgs::TransformStamped sensor2base, base2map;
-  if (!tf_.lookupTransform(frame_id_.robot, frame_id_.sensor, sensor2base) ||
-      !tf_.lookupTransform(frame_id_.map, frame_id_.robot, base2map))
+  geometry_msgs::TransformStamped lidar2base, base2map;
+  if (!tf_.lookupTransform(frame_ids::ROBOT_BASE, frame_ids::sensor::LIDAR, lidar2base) ||
+      !tf_.lookupTransform(frame_ids::MAP, frame_ids::ROBOT_BASE, base2map))
     return;
 
   // 2. Convert ROS msg to PCL data
@@ -121,7 +121,7 @@ void HeightMappingNode::lidarScanCallback(const sensor_msgs::PointCloud2Ptr &msg
   pcl::moveFromROSMsg(*msg, *scan_raw);
 
   // 3. Preprocess scan data: ready for terrain mapping
-  auto scan_preprocessed = processLidarScan(scan_raw, sensor2base, base2map);
+  auto scan_preprocessed = processLidarScan(scan_raw, lidar2base, base2map);
   if (!scan_preprocessed)
     return;
 
@@ -132,7 +132,7 @@ void HeightMappingNode::lidarScanCallback(const sensor_msgs::PointCloud2Ptr &msg
   publishRasterizedLidarScan(scan_rasterized);
 
   // 6. Raycasting correction: remove dynamic objects
-  auto sensor2map = tf_.multiplyTransforms(sensor2base, base2map);
+  auto sensor2map = tf_.multiplyTransforms(lidar2base, base2map);
   Eigen::Vector3f sensorOrigin3D(sensor2map.transform.translation.x,
                                  sensor2map.transform.translation.y,
                                  sensor2map.transform.translation.z);
@@ -159,10 +159,10 @@ void HeightMappingNode::rgbdScanCallback(const sensor_msgs::PointCloud2Ptr &msg)
   }
 
   // Get Transform matrix
-  frame_id_.sensor = msg->header.frame_id;
+  frame_ids::sensor::RGBD = msg->header.frame_id;
   geometry_msgs::TransformStamped camera2base, base2map;
-  if (!tf_.lookupTransform(frame_id_.robot, frame_id_.sensor, camera2base) ||
-      !tf_.lookupTransform(frame_id_.map, frame_id_.robot, base2map))
+  if (!tf_.lookupTransform(frame_ids::ROBOT_BASE, frame_ids::sensor::RGBD, camera2base) ||
+      !tf_.lookupTransform(frame_ids::MAP, frame_ids::ROBOT_BASE, base2map))
     return;
 
   // Prepare pointcloud
@@ -242,7 +242,7 @@ HeightMappingNode::processRGBDScan(const pcl::PointCloud<Color>::Ptr &cloud,
 void HeightMappingNode::updateMapOrigin(const ros::TimerEvent &event) {
 
   geometry_msgs::TransformStamped base2map;
-  if (!tf_.lookupTransform(frame_id_.map, frame_id_.robot, base2map))
+  if (!tf_.lookupTransform(frame_ids::MAP, frame_ids::ROBOT_BASE, base2map))
     return;
 
   // Update map origin

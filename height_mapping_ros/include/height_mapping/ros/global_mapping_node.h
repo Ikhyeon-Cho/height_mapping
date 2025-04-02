@@ -93,7 +93,6 @@ private:
   // Core mapping object
   std::unique_ptr<height_mapping::GlobalMapper> mapper_;
   TransformOps tf_;
-  FrameID frame_id_;
 
   // Map writer
   // HeightMapWriter mapWriter_;
